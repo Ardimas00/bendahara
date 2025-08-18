@@ -21,7 +21,8 @@ def create_app(config_class=Config):
     if not admin:
         db.users.insert_one({
             'username': 'bendahara',
-            'password_hash': generate_password_hash('hanyayangberhak'),
+            # Use PBKDF2 (sha256) to avoid environments lacking hashlib.scrypt (e.g., some Termux builds)
+            'password_hash': generate_password_hash('hanyayangberhak', method='pbkdf2:sha256'),
             'role': 'admin',
             'created_at': __import__('datetime').datetime.utcnow()
         })
