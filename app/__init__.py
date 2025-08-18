@@ -1,10 +1,19 @@
 from flask import Flask
 from config import Config
 from pymongo import MongoClient
+import os
 
 # Initialize MongoDB client
-client = MongoClient(Config.MONGO_URI)
-db = client.get_default_database()
+client = MongoClient(Config.MONGO_URI) if Config.MONGO_URI else None
+# Determine database: try default from URI, else use MONGO_DB env or fallback name
+if client:
+    try:
+        db = client.get_default_database()
+    except Exception:
+        db_name = os.environ.get('MONGO_DB', 'bendahara_db')
+        db = client[db_name]
+else:
+    db = None
 
 def create_app(config_class=Config):
     from werkzeug.security import generate_password_hash
