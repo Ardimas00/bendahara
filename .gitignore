@@ -1,31 +1,35 @@
 # Python
 __pycache__/
 *.py[cod]
-*.pyc
 *.pyo
 *.pyd
-*.log
-
-# Environments
+*.pyc
+*.egg-info/
+.venv/
+venv/
 .env
 .env.*
-venv/
-.venv/
-ENV/
+.pytest_cache/
+.coverage
 
 # Node
 node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+.yarn-cache/
+package-lock.json
 
-# IDE/OS
+# Editors/OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 
-# Builds
+# Build/Dist
 build/
 dist/
-*.egg-info/
+*.log
 
-# Docker (ignore local files, not Dockerfile)
-*.tar
+# Frontend generated
+static/css/output.css

@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # In production, these MUST be provided via environment variables.
-    # load_dotenv() enables local development via a .env file (not committed).
-    SECRET_KEY = os.environ.get('SECRET_KEY')
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+    # Require MONGO_URI to be provided via environment variables in production
+    # This prevents leaking credentials via source control.
     MONGO_URI = os.environ.get('MONGO_URI')
