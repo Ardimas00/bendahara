@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto pt-6 pb-6">
+    <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">Tambah Transaksi Baru</h1>
+            <a href="{{ url_for('main.dashboard') }}" class="text-sm font-medium text-sky-600 hover:text-sky-500">&larr; Kembali ke Dashboard</a>
+        </div>
+
+        <form action="{{ url_for('main.add_transaction') }}" method="post">
+            <div class="mb-4">
+                <div>
+                    <label for="tanggal" class="block text-sm font-medium text-slate-700">Tanggal</label>
+                    <input type="date" name="tanggal" id="tanggal" required class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div>
+                    <label for="deskripsi" class="block text-sm font-medium text-slate-700">Deskripsi</label>
+                    <input type="text" name="deskripsi" id="deskripsi" required placeholder="Contoh: Pembelian spanduk acara" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div>
+                    <label for="jumlah" class="block text-sm font-medium text-slate-700">Jumlah (Rp)</label>
+                    <input type="text" name="jumlah" id="jumlah" required placeholder="Contoh: 500000" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                </div>
+            </div>
+
+            
+            <div class="mb-6">
+                <div>
+                    <label for="kategori" class="block text-sm font-medium text-slate-700">Kategori</label>
+                    <select name="kategori" id="kategori" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                        <option value="Pemasukan">Pemasukan</option>
+                        <option value="Pengeluaran">Pengeluaran</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Rincian Pengeluaran (hanya untuk kategori Pengeluaran) -->
+            <div id="rincian-section" class="mb-8 hidden">
+                <label class="block text-sm font-bold text-slate-700 mb-2">Rincian Pengeluaran</label>
+                <div id="rincian-list"></div>
+                <button type="button" id="add-rincian-btn" class="mt-3 inline-flex items-center px-3 py-1 border border-sky-600 text-xs font-medium rounded shadow-sm text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                    + Tambah Rincian
+                </button>
+            </div>
+
+            <div class="mt-8 pt-5 border-t border-slate-200">
+                <div class="flex justify-end">
+                    <a href="{{ url_for('main.dashboard') }}" class="inline-flex justify-center py-2 px-4 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                        Batal
+                    </a>
+                    <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-sky-600 rounded-md shadow-sm text-sm font-medium text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                        Simpan Transaksi
+                    </button>
+                </div>
+            </div>
+            <script>
+                // Helper untuk membuat elemen rincian
+                function createRincianRow(nama = '', jumlah = '') {
+                    const row = document.createElement('div');
+                    row.className = 'flex gap-2 mb-2 rincian-row';
+                    row.innerHTML = `
+                        <input type="text" name="rincian_nama" placeholder="Nama Rincian" value="${nama}" class="flex-1 rounded-md border-slate-300 focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50" required>
+                        <input type="text" name="rincian_jumlah" placeholder="Jumlah (Rp)" value="${jumlah}" class="w-32 rounded-md border-slate-300 focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50" required>
+                        <button type="button" class="remove-rincian-btn text-rose-600 hover:text-rose-800 px-2">&times;</button>
+                    `;
+                    row.querySelector('.remove-rincian-btn').onclick = () => row.remove();
+                    return row;
+                }
+                // Tampilkan/Hide rincian-section sesuai kategori
+                function toggleRincianSection() {
+                    const kategori = document.getElementById('kategori').value;
+                    const rincianSection = document.getElementById('rincian-section');
+                    if (kategori === 'Pengeluaran') {
+                        rincianSection.classList.remove('hidden');
+                        if (document.querySelectorAll('.rincian-row').length === 0) {
+                            document.getElementById('rincian-list').appendChild(createRincianRow());
+                        }
+                    } else {
+                        rincianSection.classList.add('hidden');
+                        document.getElementById('rincian-list').innerHTML = '';
+                    }
+                }
+                document.getElementById('kategori').addEventListener('change', toggleRincianSection);
+                document.getElementById('add-rincian-btn').addEventListener('click', function() {
+                    document.getElementById('rincian-list').appendChild(createRincianRow());
+                });
+                // Pastikan saat submit, name[] dikirim sebagai array
+                document.querySelector('form').addEventListener('submit', function(e) {
+                    document.querySelectorAll('input[name="rincian_nama"]').forEach(inp => inp.name = 'rincian_nama');
+                    document.querySelectorAll('input[name="rincian_jumlah"]').forEach(inp => inp.name = 'rincian_jumlah');
+                });
+                // Inisialisasi jika kategori default adalah Pengeluaran
+                window.addEventListener('DOMContentLoaded', toggleRincianSection);
+            </script>
+        </form>
+    </div>
+</div>
+ 
+
+<!-- Quick Add Pengeluaran: langsung isi rincian (nama+qty+harga) -->
+<div class="max-w-2xl mx-auto pb-10">
+  <div class="bg-white p-8 rounded-xl shadow-lg mt-6 border border-slate-200">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold text-slate-800">Tambah Pengeluaran (Rincian Dulu)</h2>
+      <span class="text-xs text-slate-500">Kategori otomatis: Pengeluaran</span>
+    </div>
+    <form action="{{ url_for('main.quick_add_expense') }}" method="post" id="quick-add-form">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label for="q_tanggal" class="block text-sm font-medium text-slate-700">Tanggal</label>
+          <input type="date" name="tanggal" id="q_tanggal" required class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+        </div>
+        <div class="md:col-span-2">
+          <label for="q_deskripsi" class="block text-sm font-medium text-slate-700">Deskripsi Pengeluaran</label>
+          <input type="text" name="deskripsi" id="q_deskripsi" required placeholder="Contoh: Belanja Hadiah" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold text-slate-700 mb-2">Rincian</label>
+        <div id="q_rincian_list" class="space-y-2 overflow-x-auto"></div>
+        <button type="button" id="q_add_row" class="mt-3 inline-flex items-center px-3 py-1 border border-sky-600 text-xs font-medium rounded shadow-sm text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">+ Tambah Baris</button>
+      </div>
+
+      <div class="mt-4 flex justify-end items-center gap-4">
+        <div class="text-sm text-slate-600">Total Pengeluaran:</div>
+        <div id="q_grand_total" class="text-lg font-bold text-rose-700">Rp 0</div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-sky-600 rounded-md shadow-sm text-sm font-medium text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">Simpan Pengeluaran</button>
+      </div>
+
+      <input type="hidden" name="kategori" value="Pengeluaran">
+    </form>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const list = document.getElementById('q_rincian_list');
+    const addBtn = document.getElementById('q_add_row');
+    const grandEl = document.getElementById('q_grand_total');
+
+    function num(v){
+      if(typeof v !== 'string') return Number(v||0);
+      return Number(v.replaceAll('.', '').replaceAll(',', '') || 0);
+    }
+    function formatIDR(n){
+      try{ return 'Rp ' + (Math.round(n)).toLocaleString('id-ID'); }catch(e){ return 'Rp ' + n; }
+    }
+
+    function createRow(nama='', qty='1', harga=''){
+      const row = document.createElement('div');
+      row.className = 'q-row flex flex-col sm:flex-row sm:items-center gap-2 mb-2';
+      row.innerHTML = `
+        <div class="flex items-center gap-2 sm:contents">
+          <input type="text" name="rincian_nama_q" placeholder="Nama item" value="${nama}" class="w-full sm:flex-none sm:max-w-[220px] rounded-md border border-slate-300 focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50 bg-white text-base sm:text-sm py-1" required>
+          <input type="number" inputmode="numeric" pattern="[0-9]*" min="1" step="1" name="rincian_qty_q" placeholder="Qty" value="${qty}" class="rounded-md border border-slate-300 text-center px-0 bg-white text-base sm:text-sm py-1 font-medium placeholder-slate-500" style="width:3ch" required>
+        </div>
+        <div class="flex items-center gap-2 sm:contents">
+          <div class="w-28 sm:w-32 flex items-center rounded-md border border-slate-300 bg-white overflow-hidden">
+            <span class="pl-2 pr-1 text-slate-500 text-sm select-none">Rp</span>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" name="rincian_harga_q" placeholder="0" value="${harga}" class="flex-1 bg-white border-0 focus:ring-0 focus:outline-none text-left pr-2 text-base sm:text-sm py-1" required>
+          </div>
+          <div class="w-20 sm:w-24 text-right text-sm font-semibold whitespace-nowrap q-total">Rp 0</div>
+          <button type="button" title="Hapus" class="h-8 w-8 flex items-center justify-center -mx-1 rounded hover:bg-rose-50 text-rose-600 hover:text-rose-800" aria-label="Hapus">×</button>
+        </div>
+      `;
+      const removeBtn = row.querySelector('button[aria-label="Hapus"]');
+      removeBtn.onclick = () => { row.remove(); computeGrand(); };
+      const qtyEl = row.querySelector('input[name="rincian_qty_q"]');
+      const hargaEl = row.querySelector('input[name="rincian_harga_q"]');
+      function compute(){
+        const total = num(qtyEl.value) * num(hargaEl.value);
+        row.querySelector('.q-total').textContent = formatIDR(total);
+        computeGrand();
+      }
+      // Auto-resize Qty width: default fits 2 digits, expands as user types
+      function resizeQty(){
+        const len = (qtyEl.value || '').length || 1;
+        qtyEl.style.width = Math.max(3, len) + 'ch';
+      }
+      qtyEl.addEventListener('input', () => { resizeQty(); compute(); });
+      resizeQty();
+      hargaEl.addEventListener('input', compute);
+      // Enter di kolom harga: tambah baris baru & fokus ke nama berikutnya
+      hargaEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const newRow = createRow('', '1', '');
+          list.appendChild(newRow);
+          const nextNama = newRow.querySelector('input[name="rincian_nama_q"]');
+          if (nextNama) nextNama.focus();
+        }
+      });
+      compute();
+      return row;
+    }
+
+    function computeGrand(){
+      let sum = 0;
+      list.querySelectorAll('.q-row').forEach(r => {
+        const qty = num(r.querySelector('input[name="rincian_qty_q"]').value);
+        const harga = num(r.querySelector('input[name="rincian_harga_q"]').value);
+        sum += qty * harga;
+      });
+      grandEl.textContent = formatIDR(sum);
+    }
+
+    addBtn.addEventListener('click', () => {
+      list.appendChild(createRow());
+    });
+
+    // Seed satu baris awal
+    list.appendChild(createRow('', '1', ''));
+
+    // Pastikan field dikirim sebagai array
+    document.getElementById('quick-add-form').addEventListener('submit', function(){
+      this.querySelectorAll('input[name="rincian_nama_q"]').forEach((el)=> el.name='rincian_nama_q');
+      this.querySelectorAll('input[name="rincian_qty_q"]').forEach((el)=> el.name='rincian_qty_q');
+      this.querySelectorAll('input[name="rincian_harga_q"]').forEach((el)=> el.name='rincian_harga_q');
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <h1 class="text-2xl font-bold text-slate-800 mb-6">Riwayat Transaksi</h1>
+    <!-- Filter & Search Form -->
+    <form method="get" action="{{ url_for('main.history') }}" class="mb-6 bg-white p-4 rounded-lg shadow flex flex-wrap gap-3 items-end">
+        <div>
+            <label for="q" class="block text-xs font-medium text-slate-600">Deskripsi</label>
+            <input type="text" name="q" id="q" value="{{ request.args.get('q', '') }}" placeholder="Cari deskripsi..." class="block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50 text-xs">
+        </div>
+
+        <div>
+            <label for="kategori" class="block text-xs font-medium text-slate-600">Kategori</label>
+            <select name="kategori" id="kategori" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50 text-xs">
+                <option value="">Semua Kategori</option>
+                <option value="Pemasukan" {% if request.args.get('kategori') == 'Pemasukan' %}selected{% endif %}>Pemasukan</option>
+                <option value="Pengeluaran" {% if request.args.get('kategori') == 'Pengeluaran' %}selected{% endif %}>Pengeluaran</option>
+            </select>
+        </div>
+        <div>
+            <button type="submit" class="inline-flex justify-center py-2 px-4 border border-slate-300 rounded-md shadow-sm text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">Cari</button>
+            <a href="{{ url_for('main.history') }}" class="inline-flex justify-center py-2 px-4 border border-slate-300 rounded-md shadow-sm text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 ml-2">Reset</a>
+        </div>
+    </form>
+    <!-- Transactions Table -->
+    <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="text-xl font-bold text-slate-800">Tabel Transaksi</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-slate-600 bg-slate-50 uppercase tracking-wider whitespace-nowrap">Tanggal</th>
+                        <th class="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-slate-600 bg-slate-50 uppercase tracking-wider whitespace-nowrap">Deskripsi</th>
+                        <th class="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-slate-600 bg-slate-50 uppercase tracking-wider whitespace-nowrap">Kategori</th>
+                        <th class="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-slate-600 bg-slate-50 uppercase tracking-wider whitespace-nowrap">Jumlah</th>
+                        <th class="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-slate-600 bg-slate-50 uppercase tracking-wider whitespace-nowrap">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    {% for t in transactions %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-2 sm:px-4 md:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-600">{{ t.tanggal.strftime('%d %b %Y') }}</td>
+                        <td class="px-2 sm:px-4 md:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-slate-900 max-w-[120px] sm:max-w-none truncate">{{ t.deskripsi }}</td>
+                        <td class="px-2 sm:px-4 md:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+    {% if t.kategori == 'Pemasukan' %}bg-emerald-100 text-emerald-700
+    {% elif t.kategori == 'Pengeluaran' %}bg-rose-100 text-rose-700
+    {% else %}bg-slate-100 text-slate-800{% endif %}">
+    {{ t.kategori }}
+</span>
+</td>
+                        <td class="px-2 sm:px-4 md:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right font-semibold border-l border-slate-100 {% if t.kategori == 'Pemasukan' %}text-emerald-600{% else %}text-rose-600{% endif %}">
+                            {% if t.kategori == 'Pemasukan' %}+{% else %}-{% endif %} Rp {{ "{:,.0f}".format(t.adjusted_jumlah).replace(',', '.') }}
+                        </td>
+                        <td class="px-2 sm:px-4 md:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center font-medium">
+                            <a href="{{ url_for('main.view_transaction', id=t._id) }}" class="text-sky-600 hover:text-sky-800">Detail</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center text-slate-400 py-4">Tidak ada transaksi ditemukan.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

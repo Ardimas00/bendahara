@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Environments
+.env
+.env.*
+venv/
+.venv/
+ENV/
+
+# Node
+node_modules/
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Builds
+build/
+dist/
+*.egg-info/
+
+# Docker (ignore local files, not Dockerfile)
+*.tar

@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+
+{% block title %}Laporan Keuangan - {{ start_date.strftime('%d %b %Y') }} s/d {{ end_date.strftime('%d %b %Y') }}{% endblock %}
+
+{% block head_extra %}
+<style>
+    @page {
+        size: auto;
+        margin: 0;
+    }
+    @media print {
+        body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            margin: 1.5cm; /* Menambahkan margin agar konten tidak menempel di tepi kertas */
+        }
+        .no-print {
+            display: none;
+        }
+        .print-container {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+        body > .bg-slate-50 {
+            background-color: white !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto py-6 print-container">
+    <!-- Header for Screen View -->
+    <div class="no-print flex justify-between items-center mb-6 px-4 sm:px-0">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">Laporan Keuangan</h1>
+            <p class="mt-1 text-sm text-slate-500">Pilih periode untuk melihat dan mencetak laporan.</p>
+        </div>
+    </div>
+
+    <!-- Form Pilih Periode -->
+    <form method="get" action="{{ url_for('main.report') }}" class="no-print mb-8 bg-white p-4 rounded-lg shadow flex flex-wrap gap-3 items-end">
+        <div>
+            <label for="start_date" class="block text-xs font-medium text-slate-600">Tanggal Mulai</label>
+            <input type="date" id="start_date" name="start_date" required value="{{ request.args.get('start_date', '') }}" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50 text-xs">
+        </div>
+        <div>
+            <label for="end_date" class="block text-xs font-medium text-slate-600">Tanggal Akhir</label>
+            <input type="date" id="end_date" name="end_date" required value="{{ request.args.get('end_date', '') }}" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50 text-xs">
+        </div>
+        <div class="flex items-center gap-2 mt-5">
+            <input type="checkbox" id="validate_rincian" name="validate_rincian" value="1" class="h-4 w-4 text-sky-600 border-slate-300 rounded" {% if validate_rincian %}checked{% endif %}>
+            <label for="validate_rincian" class="text-xs text-slate-700">Tampilkan kolom Kesesuaian rincian pengeluaran</label>
+        </div>
+        <div>
+            <button type="submit" class="inline-flex justify-center py-2 px-4 border border-slate-300 rounded-md shadow-sm text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">Tampilkan Laporan</button>
+        </div>
+    </form>
+    {% if error %}
+    <div class="bg-rose-100 border border-rose-200 text-rose-700 rounded-md px-4 py-2 mb-6">{{ error }}</div>
+    {% endif %}
+
+    {% if start_date and end_date %}
+    <!-- Report Content -->
+    <div class="bg-white p-8 rounded-xl shadow-lg print:shadow-none">
+        <!-- Report Header -->
+        <div class="text-center mb-8 pb-4 border-b-2 border-slate-200">
+            <h2 class="text-3xl font-bold text-slate-900">Laporan Keuangan</h2>
+            <p class="text-lg text-slate-600 mt-1">Periode: {{ start_date.strftime('%d %B %Y') }} &mdash; {{ end_date.strftime('%d %B %Y') }}</p>
+        </div>
+        <div class="no-print flex justify-end mb-6">
+            <button onclick="window.print()" class="inline-flex items-center px-4 py-2 border border-sky-600 text-sm font-medium rounded-md shadow-sm text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-6 0v-4m0 4h6m-6 0H6"></path></svg>
+                Cetak Laporan
+            </button>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center">
+            <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-lg">
+                <h3 class="text-md font-semibold text-emerald-800">Total Pemasukan</h3>
+                <p class="text-2xl font-bold text-emerald-900 mt-1">Rp {{ '{:,.0f}'.format(report_pemasukan).replace(',', '.') }}</p>
+            </div>
+            <div class="bg-rose-50 border border-rose-200 p-4 rounded-lg">
+                <h3 class="text-md font-semibold text-rose-800">Total Pengeluaran</h3>
+                <p class="text-2xl font-bold text-rose-900 mt-1">Rp {{ '{:,.0f}'.format(report_pengeluaran).replace(',', '.') }}</p>
+            </div>
+            <div class="bg-sky-50 border border-sky-200 p-4 rounded-lg">
+                <h3 class="text-md font-semibold text-sky-800">Saldo Periode Ini</h3>
+                <p class="text-2xl font-bold text-sky-900 mt-1">Rp {{ '{:,.0f}'.format(report_saldo).replace(',', '.') }}</p>
+            </div>
+            </div> <!-- /#rincianWrap -->
+            <script>
+            (function(){
+              const toggle = document.getElementById('compactRincianToggle');
+              const wrap = document.getElementById('rincianWrap');
+              if (!toggle || !wrap) return;
+              // Apply from session storage to persist during navigation
+              try {
+                const saved = sessionStorage.getItem('rincian_compact');
+                if (saved === '1') { toggle.checked = true; wrap.classList.add('compact'); }
+              } catch (e) {}
+              toggle.addEventListener('change', function(){
+                if (this.checked) {
+                  wrap.classList.add('compact');
+                  try { sessionStorage.setItem('rincian_compact','1'); } catch(e) {}
+                } else {
+                  wrap.classList.remove('compact');
+                  try { sessionStorage.removeItem('rincian_compact'); } catch(e) {}
+                }
+              });
+            })();
+            </script>
+        </div>
+        <!-- Tabs -->
+        <div class="no-print mb-4">
+            <div class="flex flex-wrap gap-2">
+                <button class="tab-btn px-3 py-1.5 text-xs rounded border border-slate-300 bg-white" data-tab="ledger">Ledger</button>
+                <button class="tab-btn px-3 py-1.5 text-xs rounded border border-slate-300 bg-white" data-tab="rincian">Rincian</button>
+            </div>
+        </div>
+
+        <!-- Tab: Ledger -->
+        <div class="tab-panel" id="tab-ledger">
+            <div class="no-print mb-3 flex justify-end">
+                {% set export_qs_base = 'start_date=' ~ request.args.get('start_date') ~ '&end_date=' ~ request.args.get('end_date') ~ (validate_rincian and '&validate_rincian=1' or '') %}
+                <a class="inline-flex items-center px-3 py-1.5 text-xs rounded border border-slate-300 hover:bg-slate-50" href="{{ url_for('main.report_export') }}?type=ledger&format=csv&{{ export_qs_base }}">
+                    Export CSV
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white">
+                    <thead class="bg-slate-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tanggal</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Deskripsi</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Kategori</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Jumlah (Asli)</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Jumlah Setelah Penyesuaian</th>
+                            {% if validate_rincian %}
+                            <th class="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Kesesuaian</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        {% for t in transactions %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{{ t.tanggal.strftime('%d-%m-%Y') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-800 font-medium">{{ t.deskripsi }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if t.kategori == 'Pemasukan' %}bg-emerald-100 text-emerald-800{% elif t.kategori == 'Pengeluaran' %}bg-rose-100 text-rose-800{% else %}bg-slate-100 text-slate-800{% endif %}">
+                                    {{ t.kategori }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-xs font-medium text-slate-700">Rp {{ '{:,.0f}'.format(t.jumlah).replace(',', '.') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold {% if t.kategori == 'Pemasukan' %}text-emerald-600{% else %}text-rose-600{% endif %}">
+                                {{ "+ " if t.kategori == 'Pemasukan' else "- " }}Rp {{ '{:,.0f}'.format(t.adjusted_jumlah).replace(',', '.') }}
+                            </td>
+                            {% if validate_rincian %}
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-xs">
+                                {% if t.kategori == 'Pengeluaran' %}
+                                    {% if t.get('rincian_match') is not none %}
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full font-semibold {{ 'bg-emerald-600 text-white' if t.rincian_match else 'bg-rose-600 text-white' }}">
+                                            {{ 'Sesuai' if t.rincian_match else 'Tidak' }}
+                                        </span>
+                                        <div class="text-[10px] text-slate-500 mt-1">Selisih: Rp {{ '{:,.0f}'.format(t.get('rincian_selisih', 0)).replace(',', '.') }}</div>
+                                    {% else %}
+                                        <span class="text-slate-400">-</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-slate-400">-</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="{% if validate_rincian %}6{% else %}5{% endif %}" class="text-center py-10 text-slate-500">
+                                <p class="font-semibold">Tidak ada transaksi</p>
+                                <p class="text-sm">Tidak ada data transaksi yang ditemukan untuk periode yang dipilih.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination -->
+            <div class="no-print mt-4 flex items-center justify-between text-xs text-slate-600">
+                <div>Menampilkan halaman {{ page }} dari {{ total_pages }} ({{ total_count }} transaksi, {{ page_size }} per halaman)</div>
+                <div class="flex gap-2">
+                    {% set qs_base = 'start_date=' ~ request.args.get('start_date') ~ '&end_date=' ~ request.args.get('end_date') ~ (validate_rincian and '&validate_rincian=1' or '') %}
+                    {% if page > 1 %}
+                    <a class="px-3 py-1 border rounded hover:bg-slate-50" href="{{ url_for('main.report') }}?{{ qs_base }}&page=1">« Pertama</a>
+                    <a class="px-3 py-1 border rounded hover:bg-slate-50" href="{{ url_for('main.report') }}?{{ qs_base }}&page={{ page-1 }}">‹ Sebelumnya</a>
+                    {% endif %}
+                    {% if page < total_pages %}
+                    <a class="px-3 py-1 border rounded hover:bg-slate-50" href="{{ url_for('main.report') }}?{{ qs_base }}&page={{ page+1 }}">Berikutnya ›</a>
+                    <a class="px-3 py-1 border rounded hover:bg-slate-50" href="{{ url_for('main.report') }}?{{ qs_base }}&page={{ total_pages }}">Terakhir »</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Rincian (Validasi + Breakdown) -->
+        <div class="tab-panel hidden" id="tab-rincian">
+            <style>
+            @media screen {
+              #rincianWrap.compact .rincian-table th,
+              #rincianWrap.compact .rincian-table td { padding-top: 4px; padding-bottom: 4px; }
+              #rincianWrap.compact .rincian-table .col-harga,
+              #rincianWrap.compact .rincian-table .col-index { display: none; }
+              #rincianWrap.compact .rincian-table thead th { font-size: 10px; }
+              #rincianWrap.compact .rincian-table tbody td { font-size: 11px; }
+            }
+            @media print {
+              #compactRincianToggle, label[for="compactRincianToggle"] { display: none !important; }
+              /* Pastikan semua kolom tampil saat cetak */
+              #rincianWrap .rincian-table .col-harga,
+              #rincianWrap .rincian-table .col-index { display: table-cell !important; }
+            }
+            </style>
+            <div id="rincianWrap">
+            <!-- Exports -->
+            <div class="no-print mb-3 flex flex-wrap gap-3 items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <input id="compactRincianToggle" type="checkbox" class="h-4 w-4 text-sky-600 border-slate-300 rounded" />
+                    <label for="compactRincianToggle" class="text-xs text-slate-600 select-none">Tampilan ringkas</label>
+                </div>
+                {% set export_qs_base = 'start_date=' ~ request.args.get('start_date') ~ '&end_date=' ~ request.args.get('end_date') %}
+                <a class="inline-flex items-center px-3 py-1.5 text-xs rounded border border-slate-300 hover:bg-slate-50" href="{{ url_for('main.report_export') }}?type=mismatch&format=csv&{{ export_qs_base }}">Export Validasi CSV</a>
+                <a class="inline-flex items-center px-3 py-1.5 text-xs rounded border border-slate-300 hover:bg-slate-50" href="{{ url_for('main.report_export') }}?type=rincian&format=csv&{{ export_qs_base }}">Export Rincian CSV</a>
+            </div>
+
+            <!-- Validasi Rincian -->
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-semibold text-slate-700">Validasi Rincian</h3>
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{{ mismatch|length }} temuan</span>
+            </div>
+            <div class="overflow-x-auto mb-8">
+                <table class="min-w-full bg-white">
+                    <thead class="bg-slate-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tanggal</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Deskripsi</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Jumlah Transaksi</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Total Rincian</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Selisih</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        {% for m in mismatch %}
+                        <tr>
+                            <td class="px-6 py-3 text-xs text-slate-700">{{ m.tanggal.strftime('%d-%m-%Y') }}</td>
+                            <td class="px-6 py-3 text-xs text-slate-800">{{ m.deskripsi }}</td>
+                            <td class="px-6 py-3 text-xs text-right">Rp {{ '{:,.0f}'.format(m.jumlah_transaksi).replace(',', '.') }}</td>
+                            <td class="px-6 py-3 text-xs text-right">Rp {{ '{:,.0f}'.format(m.total_rincian).replace(',', '.') }}</td>
+                            <td class="px-6 py-3 text-xs text-right font-semibold {% if m.selisih == 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">Rp {{ '{:,.0f}'.format(m.selisih).replace(',', '.') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center py-6 text-slate-500">Semua transaksi pengeluaran sudah sesuai rincian.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Breakdown Rincian per Transaksi -->
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-semibold text-slate-700">Rincian per Transaksi</h3>
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{{ rincian_by_trans|length }} transaksi</span>
+            </div>
+            <div class="space-y-10">
+                {% for t in rincian_by_trans %}
+                <div class="border border-slate-200 rounded-lg bg-white shadow-sm">
+                    <div class="px-4 py-3 bg-slate-50 rounded-t-lg flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <div class="text-sm font-semibold text-slate-800">{{ t.deskripsi or 'Tanpa Deskripsi' }}</div>
+                            <div class="text-[11px] text-slate-500">Tanggal: {{ t.tanggal.strftime('%d-%m-%Y') if t.tanggal.strftime else t.tanggal }}</div>
+                        </div>
+                        <div class="text-[12px] text-slate-700 flex flex-wrap gap-4 items-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold {{ 'bg-emerald-100 text-emerald-700' if t.selisih == 0 else 'bg-rose-100 text-rose-700' }}">
+                                {{ 'Sesuai' if t.selisih == 0 else 'Tidak Sesuai' }}
+                            </span>
+                            <span>Total Transaksi: <span class="font-semibold">Rp {{ '{:,.0f}'.format(t.jumlah_transaksi).replace(',', '.') }}</span></span>
+                            <span>Total Rincian: <span class="font-semibold">Rp {{ '{:,.0f}'.format(t.total_rincian).replace(',', '.') }}</span></span>
+                            <span>Selisih: <span class="font-semibold {{ 'text-emerald-600' if t.selisih == 0 else 'text-rose-600' }}">Rp {{ '{:,.0f}'.format(t.selisih).replace(',', '.') }}</span></span>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto my-3">
+                        <table class="min-w-full bg-white rincian-table">
+                            <thead class="bg-slate-100 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-[11px] font-semibold text-slate-600 uppercase tracking-wider w-8 col-index">#</th>
+                                    <th class="px-3 py-2 text-left text-[11px] font-semibold text-slate-600 uppercase tracking-wider">Nama</th>
+                                    <th class="px-3 py-2 text-right text-[11px] font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Qty</th>
+                                    <th class="px-3 py-2 text-right text-[11px] font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap col-harga">Harga</th>
+                                    <th class="px-3 py-2 text-right text-[11px] font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for ri in t.rincian %}
+                                <tr class="even:bg-slate-50">
+                                    <td class="px-3 py-1.5 text-[11px] text-slate-500 col-index">{{ loop.index }}</td>
+                                    <td class="px-3 py-1.5 text-xs text-slate-800">{{ ri.nama }}</td>
+                                    <td class="px-3 py-1.5 text-xs text-right font-mono tabular-nums">{{ ri.qty }}</td>
+                                    <td class="px-3 py-1.5 text-xs text-right font-mono tabular-nums col-harga">{% if ri.harga is not none %}Rp {{ '{:,.0f}'.format(ri.harga).replace(',', '.') }}{% else %}-{% endif %}</td>
+                                    <td class="px-3 py-1.5 text-xs text-right font-semibold font-mono tabular-nums">Rp {{ '{:,.0f}'.format(ri.jumlah or 0).replace(',', '.') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="border-t border-slate-200">
+                                    <td class="px-3 py-2 text-[11px] text-slate-500" colspan="4">Subtotal</td>
+                                    <td class="px-3 py-2 text-xs text-right font-bold font-mono tabular-nums">Rp {{ '{:,.0f}'.format(t.total_rincian).replace(',', '.') }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-6 text-slate-500">Tidak ada rincian pengeluaran pada periode ini.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Tab: Rekap Harian -->
+        <div class="tab-panel hidden" id="tab-rekap">
+            <div class="no-print mb-3 flex justify-end">
+                {% set export_qs_base = 'start_date=' ~ request.args.get('start_date') ~ '&end_date=' ~ request.args.get('end_date') %}
+                <a class="inline-flex items-center px-3 py-1.5 text-xs rounded border border-slate-300 hover:bg-slate-50" href="{{ url_for('main.report_export') }}?type=rekap&format=csv&{{ export_qs_base }}">
+                    Export CSV
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white">
+                    <thead class="bg-slate-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tanggal</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Pemasukan</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Pengeluaran</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Saldo Kumulatif</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        {% for r in recap %}
+                        <tr>
+                            <td class="px-6 py-3 text-xs text-slate-700">{{ r.day }}</td>
+                            <td class="px-6 py-3 text-xs text-right text-emerald-700 font-semibold">+ Rp {{ '{:,.0f}'.format(r.pemasukan).replace(',', '.') }}</td>
+                            <td class="px-6 py-3 text-xs text-right text-rose-700 font-semibold">- Rp {{ '{:,.0f}'.format(r.pengeluaran).replace(',', '.') }}</td>
+                            <td class="px-6 py-3 text-xs text-right font-semibold">Rp {{ '{:,.0f}'.format(r.saldo_kumulatif).replace(',', '.') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-6 text-slate-500">Tidak ada data rekap.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  // Simple tab switcher (no URL hash to keep things clean)
+  (function(){
+    const btns = document.querySelectorAll('.tab-btn');
+    const panels = {
+      ledger: document.getElementById('tab-ledger'),
+      rincian: document.getElementById('tab-rincian'),
+      rekap: document.getElementById('tab-rekap')
+    };
+    function activate(name){
+      for (const k in panels){
+        if (!panels[k]) continue;
+        panels[k].classList.toggle('hidden', k !== name);
+      }
+      btns.forEach(b=>{
+        b.classList.toggle('bg-sky-50', b.dataset.tab===name);
+        b.classList.toggle('border-sky-400', b.dataset.tab===name);
+        b.classList.toggle('text-sky-700', b.dataset.tab===name);
+      });
+    }
+    // default to ledger
+    activate('ledger');
+    btns.forEach(b=> b.addEventListener('click', ()=> activate(b.dataset.tab)) );
+  })();
+</script>
+{% endblock %}

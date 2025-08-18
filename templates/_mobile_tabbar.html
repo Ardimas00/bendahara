@@ -1,0 +1,30 @@
+<!-- Mobile Bottom Tab Bar (for all pages) -->
+<nav id="bottom-tab" class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-t flex justify-between items-center px-2 py-1 sm:hidden">
+    <a href="{{ url_for('main.dashboard') }}" class="flex-1 flex flex-col items-center justify-center py-2 {% if request.endpoint == 'main.dashboard' %}text-sky-600{% else %}text-slate-400 hover:text-sky-600{% endif %}">
+        <!-- Home Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7m-9 2v7a2 2 0 002 2h2a2 2 0 002-2v-7m-9 2h18" /></svg>
+        <span class="text-xs">Home</span>
+    </a>
+    <a href="{{ url_for('main.history') }}" class="flex-1 flex flex-col items-center justify-center py-2 {% if request.endpoint == 'main.history' %}text-sky-600{% else %}text-slate-400 hover:text-sky-600{% endif %}">
+        <!-- List Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
+        <span class="text-xs">Riwayat</span>
+    </a>
+    <a href="{{ url_for('main.add_transaction') }}" class="flex-1 flex flex-col items-center justify-center py-2 {% if request.endpoint == 'main.add_transaction' %}text-sky-600{% else %}text-slate-400 hover:text-sky-600{% endif %}">
+        <!-- Plus Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+        <span class="text-xs">Tambah</span>
+    </a>
+    <a href="{{ url_for('main.report') }}" class="flex-1 flex flex-col items-center justify-center py-2 {% if request.endpoint == 'main.report' %}text-sky-600{% else %}text-slate-400 hover:text-sky-600{% endif %}">
+        <!-- Chart/Report Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 012-2h2a2 2 0 012 2v6m-7 4h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+        <span class="text-xs">Laporan</span>
+    </a>
+    {% if session.get('role') == 'admin' %}
+    <a href="{{ url_for('main.logout') }}" class="flex-1 flex flex-col items-center justify-center py-2 text-slate-400 hover:text-rose-600">
+        <!-- Logout Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+        <span class="text-xs">Logout</span>
+    </a>
+    {% endif %}
+</nav>

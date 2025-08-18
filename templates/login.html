@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-sm mx-auto py-12">
+  <div class="bg-white p-6 rounded-xl shadow">
+    <h1 class="text-xl font-bold mb-4 text-center text-slate-800">Masuk Aplikasi</h1>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="mb-4">
+          {% for msg in messages %}
+            <div class="bg-rose-100 border border-rose-200 text-rose-700 rounded-md px-4 py-2 text-sm">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    <form method="post" action="{{ url_for('main.login') }}" class="space-y-4">
+      <div>
+        <label for="username" class="block text-xs font-medium text-slate-600">Username (admin)</label>
+        <input type="text" id="username" name="username" required autofocus class="block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50 text-xs">
+      </div>
+      <div>
+        <label for="password" class="block text-xs font-medium text-slate-600">Password</label>
+        <input type="password" id="password" name="password" required class="block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50 text-xs">
+      </div>
+      <button type="submit" class="w-full py-2 px-4 rounded-md bg-sky-600 text-white font-semibold hover:bg-sky-700 transition">Masuk sebagai Admin</button>
+    </form>
+    <div class="my-6 flex items-center justify-center gap-2">
+      <span class="text-xs text-slate-400">atau</span>
+    </div>
+    <form method="post" action="{{ url_for('main.viewer_entry') }}">
+      <button type="submit" class="w-full py-2 px-4 rounded-md bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 transition">Masuk sebagai Viewer</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Aplikasi Bendahara</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
+    {% block head_extra %}{% endblock %}
+</head>
+<body class="bg-slate-50 font-poppins text-slate-800">
+    <!-- Tab Navigation -->
+    <!-- Top Tab Navigation (desktop/tablet only) -->
+    <nav class="mb-6 no-print hidden sm:block">
+        <ul class="flex gap-2 sm:gap-4 justify-center sm:justify-start bg-white rounded-xl shadow p-2">
+            <li>
+                <a href="{{ url_for('main.dashboard') }}" class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition
+                    {% if request.endpoint == 'main.dashboard' %}bg-sky-50 text-sky-700 shadow{% else %}text-slate-500 hover:text-sky-700 hover:bg-slate-100{% endif %}">
+                    <!-- Home Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7m-9 2v7a2 2 0 002 2h2a2 2 0 002-2v-7m-9 2h18" /></svg>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('main.history') }}" class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition
+                    {% if request.endpoint == 'main.history' %}bg-sky-50 text-sky-700 shadow{% else %}text-slate-500 hover:text-sky-700 hover:bg-slate-100{% endif %}">
+                    <!-- List Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
+                    <span>Riwayat</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('main.add_transaction') }}" class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition
+                    {% if request.endpoint == 'main.add_transaction' %}bg-sky-50 text-sky-700 shadow{% else %}text-slate-500 hover:text-sky-700 hover:bg-slate-100{% endif %}">
+                    <!-- Plus Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    <span>Tambah</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('main.report') }}" class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition
+                    {% if request.endpoint == 'main.report' %}bg-sky-50 text-sky-700 shadow{% else %}text-slate-500 hover:text-sky-700 hover:bg-slate-100{% endif %}">
+                    <!-- Chart/Report Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 012-2h2a2 2 0 012 2v6m-7 4h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <span>Laporan</span>
+                </a>
+            </li>
+            {% if session.get('role') == 'admin' %}
+            <li class="ml-auto">
+                <a href="{{ url_for('main.logout') }}" class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition text-slate-500 hover:text-rose-600 hover:bg-rose-50">
+                    <!-- Logout Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    <span>Logout</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div id="main-content" class="container mx-auto p-4">
+        {% block content %}{% endblock %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% block scripts %}{% endblock %}
+    {% include '_mobile_tabbar.html' %}
+    <script>
+    (function(){
+      function applyBottomPadding(){
+        var content = document.getElementById('main-content');
+        var tab = document.getElementById('bottom-tab');
+        if(!content || !tab) return;
+        var h = tab.offsetHeight || 0;
+        // add small buffer for safe area
+        content.style.paddingBottom = (h + 16) + 'px';
+      }
+      window.addEventListener('resize', applyBottomPadding);
+      document.addEventListener('DOMContentLoaded', applyBottomPadding);
+    })();
+    </script>
+</body>
+</html>

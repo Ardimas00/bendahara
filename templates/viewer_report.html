@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto py-6">
+    <h1 class="text-2xl font-bold text-slate-800 mb-1">Laporan Transaksi (Viewer)</h1>
+    <p class="text-xs text-slate-500 mb-6">Acara aktif: <span class="font-semibold text-slate-700">{{ acara_name }}</span></p>
+    <!-- Kartu Ringkasan -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-xl shadow flex flex-col items-center">
+            <span class="text-xs text-slate-500">Pemasukan</span>
+            <span id="total-pemasukan" class="text-lg font-bold text-emerald-700">Rp 0</span>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow flex flex-col items-center">
+            <span class="text-xs text-slate-500">Pengeluaran</span>
+            <span id="total-pengeluaran" class="text-lg font-bold text-rose-700">Rp 0</span>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow flex flex-col items-center">
+            <span class="text-xs text-slate-500">Saldo Akhir</span>
+            <span id="saldo-akhir" class="text-lg font-bold text-sky-700">Rp 0</span>
+        </div>
+    </div>
+    <!-- Grafik Tren -->
+    <div class="bg-white p-4 rounded-xl shadow mb-6">
+        <h2 class="text-md font-bold text-slate-800 mb-2">Grafik Tren 30 Hari Terakhir</h2>
+        <canvas id="trendChart" height="80"></canvas>
+    </div>
+    <!-- Tabel Ringkas Transaksi -->
+    <div class="bg-white p-4 rounded-xl shadow">
+        <h2 class="text-md font-bold text-slate-800 mb-2">10 Transaksi Terbaru</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-2 py-2 text-left text-xs font-semibold text-slate-600">Tanggal</th>
+                        <th class="px-2 py-2 text-left text-xs font-semibold text-slate-600">Deskripsi</th>
+                        <th class="px-2 py-2 text-left text-xs font-semibold text-slate-600">Kategori</th>
+                        <th class="px-2 py-2 text-right text-xs font-semibold text-slate-600">Jumlah</th>
+                    </tr>
+                </thead>
+                <tbody id="transaksi-terbaru" class="bg-white divide-y divide-slate-200">
+                    <!-- Diisi oleh JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function rupiah(val) {
+    return 'Rp ' + (val || 0).toLocaleString('id-ID');
+}
+function kategoriBadge(kat) {
+    if (kat === 'Pemasukan') return '<span class="px-2 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Pemasukan</span>';
+    if (kat === 'Pengeluaran') return '<span class="px-2 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">Pengeluaran</span>';
+    return kat;
+}
+let trendChart;
+function renderReport(data) {
+    document.getElementById('total-pemasukan').textContent = rupiah(data.total_pemasukan);
+    document.getElementById('total-pengeluaran').textContent = rupiah(data.total_pengeluaran);
+    document.getElementById('saldo-akhir').textContent = rupiah(data.saldo_akhir);
+    // Tabel transaksi
+    const tbody = document.getElementById('transaksi-terbaru');
+    tbody.innerHTML = data.transaksi_terbaru.map(t => `
+        <tr>
+            <td class="px-2 py-2 text-xs text-slate-600">${t.tanggal}</td>
+            <td class="px-2 py-2 text-xs text-slate-900">${t.deskripsi}</td>
+            <td class="px-2 py-2 text-xs">${kategoriBadge(t.kategori)}</td>
+            <td class="px-2 py-2 text-xs text-right font-semibold ${t.kategori==='Pemasukan'?'text-emerald-700':'text-rose-700'}">${t.kategori==='Pemasukan'?'+':'-'} ${rupiah(t.jumlah)}</td>
+        </tr>
+    `).join('');
+    // Grafik
+    if (trendChart) trendChart.destroy();
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.chart_labels,
+            datasets: [
+                {
+                    label: 'Pemasukan',
+                    data: data.chart_pemasukan,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16,185,129,0.08)',
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Pengeluaran',
+                    data: data.chart_pengeluaran,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239,68,68,0.08)',
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {responsive:true,plugins:{legend:{position:'top'},title:{display:false}}}
+    });
+}
+async function fetchReport() {
+    const res = await fetch('/api/viewer-report');
+    const data = await res.json();
+    renderReport(data);
+}
+fetchReport();
+setInterval(fetchReport, 10000);
+</script>
+{% endblock %}

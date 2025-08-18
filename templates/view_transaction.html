@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6 px-4 sm:px-0">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">Detail Transaksi</h1>
+            <p class="mt-1 text-sm text-slate-500">Rincian lengkap untuk transaksi yang dipilih.</p>
+        </div>
+        <a href="{{ url_for('main.dashboard') }}" class="text-sm font-medium text-sky-600 hover:text-sky-500">&larr; Kembali ke Dashboard</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="bg-white shadow-xl rounded-xl overflow-hidden">
+        <!-- Transaction Details -->
+        <div class="p-6 border-b border-slate-200">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">{{ transaction.deskripsi }}</h2>
+                    <p class="text-sm text-slate-500">Dicatat pada {{ transaction.tanggal.strftime('%d %B %Y') }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-2xl font-bold {% if transaction.kategori == 'Pemasukan' %}text-emerald-600{% else %}text-rose-600{% endif %}">
+                        {{ "+ " if transaction.kategori == 'Pemasukan' else "- " }}Rp {{ '{:,.0f}'.format(transaction.jumlah).replace(',', '.') }}
+                    </p>
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full {% if transaction.kategori == 'Pemasukan' %}bg-emerald-100 text-emerald-800{% else %}bg-rose-100 text-rose-800{% endif %}">
+                        {{ transaction.kategori }}
+                    </span>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm text-slate-600"><span class="font-medium">Kategori:</span> {{ transaction.kategori }}</p>
+            </div>
+
+            {% if transaction.kategori == 'Pengeluaran' %}
+            <!-- Section: Rincian Pengeluaran -->
+            <div class="mt-8">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Rincian Pengeluaran</h3>
+                {% if total_rincian is not none %}
+                <div class="mb-4 rounded-lg border {{ 'border-emerald-200 bg-emerald-50' if rincian_match else 'border-rose-200 bg-rose-50' }} p-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="text-sm">
+                            <span class="mr-3">Jumlah Transaksi: <span class="font-semibold text-slate-800">Rp {{ '{:,.0f}'.format(transaction.jumlah).replace(',', '.') }}</span></span>
+                            <span class="mr-3">Total Rincian: <span class="font-semibold text-slate-800">Rp {{ '{:,.0f}'.format(total_rincian).replace(',', '.') }}</span></span>
+                            <span>Selisih: <span class="font-semibold {{ 'text-emerald-700' if rincian_match else 'text-rose-700' }}">Rp {{ '{:,.0f}'.format(selisih_rincian).replace(',', '.') }}</span></span>
+                        </div>
+                        <div>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {{ 'bg-emerald-600 text-white' if rincian_match else 'bg-rose-600 text-white' }}">
+                                {{ 'Sesuai' if rincian_match else 'Tidak Sesuai' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                <!-- Form tambah rincian -->
+                <form action="{{ url_for('main.add_rincian', id=transaction._id) }}" method="post" class="flex flex-wrap gap-2 mb-6">
+                    <input type="text" name="rincian_nama" required placeholder="Nama item" class="rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50 px-3 py-2 text-sm">
+                    <input type="number" name="rincian_jumlah" required placeholder="Jumlah (Rp)" class="rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50 px-3 py-2 text-sm" min="0">
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-sky-600 text-sm font-medium rounded-md shadow-sm text-sky-700 bg-white hover:bg-sky-50">Tambah</button>
+                </form>
+                <!-- Daftar rincian -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-100">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase">Nama Item</th>
+                                <th class="px-4 py-2 text-right text-xs font-semibold text-slate-600 uppercase">Jumlah</th>
+                                <th class="px-4 py-2 text-center text-xs font-semibold text-slate-600 uppercase">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200">
+                            {% if transaction.rincian %}
+                                {% for rincian in transaction.rincian %}
+                                <tr>
+                                    <form action="{{ url_for('main.edit_rincian', id=transaction._id, idx=loop.index0) }}" method="post">
+                                        <td class="px-4 py-2">
+                                            <input type="text" name="edit_nama" value="{{ rincian.nama }}" class="rounded-md border-slate-300 text-sm px-2 py-1 w-full">
+                                        </td>
+                                        <td class="px-4 py-2 text-right">
+                                            <input type="number" name="edit_jumlah" value="{{ rincian.jumlah }}" class="rounded-md border-slate-300 text-sm px-2 py-1 w-full" min="0">
+                                        </td>
+                                        <td class="px-4 py-2 text-center flex gap-2 justify-center">
+                                            <button type="submit" class="text-emerald-600 hover:text-emerald-800 text-xs font-semibold">Simpan</button>
+                                    </form>
+                                    <form action="{{ url_for('main.delete_rincian', id=transaction._id, idx=loop.index0) }}" method="post" onsubmit="return confirm('Hapus rincian ini?');">
+                                            <button type="submit" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Hapus</button>
+                                    </form>
+                                        </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="3" class="text-center text-slate-400 py-4">Belum ada rincian pengeluaran.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="p-6 bg-slate-50 flex justify-end items-center gap-3">
+            <a href="{{ url_for('main.edit_transaction', id=transaction._id) }}" class="inline-flex items-center px-4 py-2 border border-sky-600 text-sm font-medium rounded-md shadow-sm text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                Edit
+            </a>
+            <form action="{{ url_for('main.delete_transaction', id=transaction._id) }}" method="post" onsubmit="return confirm('Apakah Anda yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.');" class="inline">
+                <button type="submit" class="inline-flex items-center px-4 py-2 border border-rose-600 text-sm font-medium rounded-md shadow-sm text-rose-700 bg-white hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500">
+                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                    Hapus
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Adjustments Section -->
+    <div class="mt-8">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-slate-800">Riwayat Penyesuaian</h3>
+        </div>
+
+        <!-- Adjustment Form -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+            <h4 class="text-md font-semibold text-slate-700 mb-4">Buat Penyesuaian Baru</h4>
+            <form action="{{ url_for('main.adjust_transaction', id=transaction._id) }}" method="post" class="mt-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <label for="adjustment_amount" class="block text-sm font-medium text-slate-600">Jumlah Penyesuaian (Rp)</label>
+                        <input type="text" name="adjustment_amount" id="adjustment_amount" required placeholder="Contoh: 10000 atau -5000" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="reason" class="block text-sm font-medium text-slate-600">Alasan Penyesuaian</label>
+                        <input type="text" name="reason" id="reason" required placeholder="Contoh: Koreksi salah input" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                    </div>
+                </div>
+                <div class="flex justify-end mt-4">
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-sky-600 text-sm font-medium rounded-md shadow-sm text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                        Simpan Penyesuaian
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Adjustments List -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <ul class="divide-y divide-slate-200">
+                {% if transaction.adjustments %}
+                    {% for adj in transaction.adjustments %}
+                    <li class="p-4 flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium text-slate-800">{{ adj.reason }}</p>
+                            <p class="text-xs text-slate-500">Pada {{ adj.timestamp.strftime('%d %B %Y, %H:%M') }}</p>
+                        </div>
+                        <p class="text-sm font-semibold {% if adj.amount > 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
+                            {{ "+ " if adj.amount > 0 else "- " }}Rp {{ '{:,.0f}'.format(adj.amount|abs).replace(',', '.') }}
+                        </p>
+                    </li>
+                    {% endfor %}
+                {% else %}
+                    <li class="p-6 text-center">
+                        <p class="text-sm text-slate-500">Belum ada penyesuaian untuk transaksi ini.</p>
+                    </li>
+                {% endif %}
+            </ul>
+            <div class="p-4 bg-slate-50 border-t border-slate-200 text-right">
+                <p class="text-sm text-slate-600">Total Setelah Penyesuaian: 
+                    <span class="font-bold text-lg {% if total_setelah_penyesuaian >= 0 %}text-slate-800{% else %}text-rose-600{% endif %}">
+                        Rp {{ '{:,.0f}'.format(total_setelah_penyesuaian).replace(',', '.') }}
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

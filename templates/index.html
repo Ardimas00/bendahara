@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+        <h1 class="text-3xl sm:text-4xl font-bold text-slate-800">Dashboard Keuangan</h1>
+        <a href="{{ url_for('main.add_transaction') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-sky-600 text-sm font-medium rounded-md shadow-sm text-slate-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            Tambah Transaksi
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+        <!-- Total Pemasukan -->
+        <div class="bg-white overflow-hidden shadow-lg rounded-xl">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-emerald-100 rounded-md p-3">
+                            <svg class="h-6 w-6 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-slate-500 truncate">Total Pemasukan</dt>
+                            <dd class="text-2xl font-bold text-slate-900">Rp {{ "{:,.0f}".format(total_pemasukan).replace(',', '.') }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Total Pengeluaran -->
+        <div class="bg-white overflow-hidden shadow-lg rounded-xl">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-rose-100 rounded-md p-3">
+                            <svg class="h-6 w-6 text-rose-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-slate-500 truncate">Total Pengeluaran</dt>
+                            <dd class="text-2xl font-bold text-slate-900">Rp {{ "{:,.0f}".format(total_pengeluaran).replace(',', '.') }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Saldo Akhir -->
+        <div class="bg-white overflow-hidden shadow-lg rounded-xl">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-sky-100 rounded-md p-3">
+                            <svg class="h-6 w-6 text-sky-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-slate-500 truncate">Saldo Akhir</dt>
+                            <dd class="text-2xl font-bold text-slate-900">Rp {{ "{:,.0f}".format(saldo_akhir).replace(',', '.') }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trend Chart -->
+    <div class="bg-white shadow-lg rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-bold text-slate-800 mb-4">Tren Keuangan (30 Hari Terakhir)</h2>
+        <div class="h-80">
+            <canvas id="transactionChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Controls: Report and Search -->
+    <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
+            <!-- Report -->
+            <div>
+                <h3 class="text-lg font-semibold text-slate-800 mb-3">Buat Laporan</h3>
+                <form method="get" action="{{ url_for('main.report') }}" target="_blank" class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                    <div>
+                        <label for="start_date" class="block text-sm font-medium text-slate-600">Tanggal Mulai</label>
+                        <input type="date" name="start_date" id="start_date" required class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                    </div>
+                    <div>
+                        <label for="end_date" class="block text-sm font-medium text-slate-600">Tanggal Akhir</label>
+                        <input type="date" name="end_date" id="end_date" required class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                    </div>
+                    <button type="submit" class="sm:col-span-2 w-full inline-flex justify-center py-2 px-4 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">Buat Laporan</button>
+                </form>
+            </div>
+            <!-- Search -->
+            <div>
+                <h3 class="text-lg font-semibold text-slate-800 mb-3">Cari & Filter</h3>
+                <form method="get" action="{{ url_for('main.history') }}" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="q" class="block text-sm font-medium text-slate-600">Deskripsi</label>
+                        <input type="text" name="q" id="q" placeholder="Cari deskripsi..." value="{{ request.args.get('q', '') }}" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                    </div>
+                    <div>
+                        
+                    </div>
+                    <div>
+                        <label for="kategori" class="block text-sm font-medium text-slate-600">Kategori</label>
+<select name="kategori" id="kategori" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+    <option value="">Semua Kategori</option>
+    <option value="Pemasukan" {% if request.args.get('kategori') == 'Pemasukan' %}selected{% endif %}>Pemasukan</option>
+    <option value="Pengeluaran" {% if request.args.get('kategori') == 'Pengeluaran' %}selected{% endif %}>Pengeluaran</option>
+</select>
+                    </div>
+                    <div class="sm:col-span-2 grid grid-cols-2 gap-3">
+                         <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">Cari</button>
+                        <a href="{{ url_for('main.history') }}" class="w-full inline-flex justify-center py-2 px-4 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">Reset</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="text-xl font-bold text-slate-800">Riwayat Transaksi</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th scope="col" class="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-slate-600 bg-slate-50 uppercase tracking-wider whitespace-nowrap">Tanggal</th>
+                        <th scope="col" class="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-slate-600 bg-slate-50 uppercase tracking-wider whitespace-nowrap">Deskripsi</th>
+                        <th scope="col" class="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-slate-600 bg-slate-50 uppercase tracking-wider whitespace-nowrap">Kategori</th>
+                        <th scope="col" class="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-slate-600 bg-slate-50 uppercase tracking-wider whitespace-nowrap">Jumlah</th>
+                        <th scope="col" class="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-slate-600 bg-slate-50 uppercase tracking-wider whitespace-nowrap">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    {% for t in transactions %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-2 sm:px-4 md:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-600">{{ t.tanggal.strftime('%d %b %Y') }}</td>
+                        <td class="px-2 sm:px-4 md:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-slate-900 max-w-[120px] sm:max-w-none truncate">{{ t.deskripsi }}</td>
+                        <td class="px-2 sm:px-4 md:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+        {% if t.kategori == 'Pemasukan' %}bg-emerald-100 text-emerald-700
+        {% elif t.kategori == 'Pengeluaran' %}bg-rose-100 text-rose-700
+        {% else %}bg-slate-100 text-slate-800{% endif %}">
+        {{ t.kategori }}
+    </span>
+</td>
+                        <td class="px-2 sm:px-4 md:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right font-semibold border-l border-slate-100 {% if t.kategori == 'Pemasukan' %}text-emerald-600{% elif t.kategori == 'Pengeluaran' %}text-rose-600{% endif %}">
+    {% if t.kategori == 'Pemasukan' %}+{% elif t.kategori == 'Pengeluaran' %}-{% endif %} Rp {{ "{:,.0f}".format(t.adjusted_jumlah).replace(',', '.') }}
+</td>
+                        <td class="px-2 sm:px-4 md:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center font-medium">
+    <a href="{{ url_for('main.view_transaction', id=t._id) }}" class="text-sky-600 hover:text-sky-800">Detail</a>
+</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-10 text-slate-500">
+                            <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-slate-900">Tidak ada transaksi</h3>
+                            <p class="mt-1 text-sm text-slate-500">Mulai tambahkan transaksi pertama Anda.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ctx = document.getElementById('transactionChart').getContext('2d');
+        
+        const chartLabels = {{ chart_labels | tojson }};
+        const pemasukanData = {{ chart_pemasukan | tojson }};
+        const pengeluaranData = {{ chart_pengeluaran | tojson }};
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [
+                    {
+                        label: 'Pemasukan',
+                        data: pemasukanData,
+                        borderColor: 'rgba(14, 165, 233, 1)', // sky-500
+                        backgroundColor: 'rgba(14, 165, 233, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Pengeluaran',
+                        data: pengeluaranData,
+                        borderColor: 'rgba(244, 63, 94, 1)', // rose-500
+                        backgroundColor: 'rgba(244, 63, 94, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value, index, values) {
+                                return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += 'Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
