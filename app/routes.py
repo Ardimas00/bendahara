@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, send_file
 from app import db
 from datetime import datetime, timedelta
-from bson.objectid import ObjectId
 import io
 import csv
 
@@ -119,8 +118,7 @@ def logout():
 @login_required
 @admin_required
 def dashboard():
-    from bson.objectid import ObjectId
-    acara_id = ObjectId(session['acara_id'])
+    acara_id = session['acara_id']
     
     # Statistik, saldo, grafik tren - filter by acara_id
     total_pemasukan = 0
@@ -135,19 +133,13 @@ def dashboard():
             total_pemasukan += adjusted_jumlah
         else:
             total_pengeluaran += adjusted_jumlah
+
     saldo_akhir = total_pemasukan - total_pengeluaran
 
     # Grafik tren 30 hari terakhir - filter by acara_id
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
     pipeline = [
         {'$match': {'tanggal': {'$gte': thirty_days_ago}, 'acara_id': acara_id}},
-        {'$addFields': {
-            'adjusted_jumlah': {'$add': ['$jumlah', {'$sum': {'$map': {'input': '$adjustments', 'as': 'adj', 'in': '$$adj.amount'}}}]} ,
-            'kategori_effective': {'$ifNull': ['$kategori', '$tipe']}
-        }},
-        {'$group': {'_id': {'date': {'$dateToString': {'format': '%Y-%m-%d', 'date': '$tanggal'}}, 'kategori': '$kategori_effective'}, 'daily_total': {'$sum': '$adjusted_jumlah'}}},
-        {'$group': {'_id': '$_id.date', 'pemasukan': {'$sum': {'$cond': [{'$eq': ['$_id.kategori', 'Pemasukan']}, '$daily_total', 0]}}, 'pengeluaran': {'$sum': {'$cond': [{'$eq': ['$_id.kategori', 'Pengeluaran']}, '$daily_total', 0]}}}},
-        {'$sort': {'_id': 1}}
     ]
     chart_data_cursor = db.transaksi.aggregate(pipeline)
     chart_data = {item['_id']: item for item in chart_data_cursor}
@@ -184,8 +176,7 @@ def viewer_report():
 @login_required
 def api_viewer_report():
     from datetime import datetime, timedelta
-    from bson.objectid import ObjectId
-    acara_id = ObjectId(session['acara_id'])
+    acara_id = session['acara_id']
     
     # Summary - filter by acara_id
     total_pemasukan = 0
@@ -205,10 +196,6 @@ def api_viewer_report():
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
     pipeline = [
         {'$match': {'tanggal': {'$gte': thirty_days_ago}, 'acara_id': acara_id}},
-        {'$addFields': {'adjusted_jumlah': {'$add': ['$jumlah', {'$sum': {'$map': {'input': '$adjustments', 'as': 'adj', 'in': '$$adj.amount'}}}]}}},
-        {'$group': {'_id': {'date': {'$dateToString': {'format': '%Y-%m-%d', 'date': '$tanggal'}}, 'kategori': '$kategori'}, 'daily_total': {'$sum': '$adjusted_jumlah'}}},
-        {'$group': {'_id': '$_id.date', 'pemasukan': {'$sum': {'$cond': [{'$eq': ['$_id.kategori', 'Pemasukan']}, '$daily_total', 0]}}, 'pengeluaran': {'$sum': {'$cond': [{'$eq': ['$_id.kategori', 'Pengeluaran']}, '$daily_total', 0]}}}},
-        {'$sort': {'_id': 1}}
     ]
     chart_data_cursor = db.transaksi.aggregate(pipeline)
     chart_data = {item['_id']: item for item in chart_data_cursor}
@@ -246,51 +233,12 @@ def api_viewer_report():
         'chart_pengeluaran': chart_pengeluaran,
         'transaksi_terbaru': transactions
     }
-    for t in transactions_cursor:
-        original_amount = t.get('jumlah', 0)
-        adjustments_total = sum(adj.get('amount', 0) for adj in t.get('adjustments', []))
-        adjusted_jumlah = original_amount + adjustments_total
-        if t['tipe'] == 'Pemasukan':
-            total_pemasukan += adjusted_jumlah
-        else:
-            total_pengeluaran += adjusted_jumlah
-    saldo_akhir = total_pemasukan - total_pengeluaran
-
-    # Grafik tren 30 hari terakhir
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-    pipeline = [
-        {'$match': {'tanggal': {'$gte': thirty_days_ago}}},
-        {'$addFields': {'adjusted_jumlah': {'$add': ['$jumlah', {'$sum': {'$map': {'input': '$adjustments', 'as': 'adj', 'in': '$$adj.amount'}}}]}}},
-        {'$group': {'_id': {'date': {'$dateToString': {'format': '%Y-%m-%d', 'date': '$tanggal'}}, 'kategori': '$kategori'}, 'daily_total': {'$sum': '$adjusted_jumlah'}}},
-        {'$group': {'_id': '$_id.date', 'pemasukan': {'$sum': {'$cond': [{'$eq': ['$_id.kategori', 'Pemasukan']}, '$daily_total', 0]}}, 'pengeluaran': {'$sum': {'$cond': [{'$eq': ['$_id.kategori', 'Pengeluaran']}, '$daily_total', 0]}}}},
-        {'$sort': {'_id': 1}}
-    ]
-    chart_data_cursor = db.transaksi.aggregate(pipeline)
-    chart_data = {item['_id']: item for item in chart_data_cursor}
-    chart_labels = []
-    chart_pemasukan = []
-    chart_pengeluaran = []
-    for i in range(30):
-        date = (datetime.utcnow() - timedelta(days=29 - i)).strftime('%Y-%m-%d')
-        chart_labels.append(date[5:])
-        data_on_date = chart_data.get(date, {})
-        chart_pemasukan.append(data_on_date.get('pemasukan', 0))
-        chart_pengeluaran.append(data_on_date.get('pengeluaran', 0))
-    return render_template('dashboard.html',
-        total_pemasukan=total_pemasukan,
-        total_pengeluaran=total_pengeluaran,
-        saldo_akhir=saldo_akhir,
-        title='Dashboard',
-        chart_labels=chart_labels,
-        chart_pemasukan=chart_pemasukan,
-        chart_pengeluaran=chart_pengeluaran)
 
 @main_bp.route('/history')
 @login_required
 @admin_required
 def history():
-    from bson.objectid import ObjectId
-    acara_id = ObjectId(session['acara_id'])
+    acara_id = session['acara_id']
     
     # Filter & search - always include acara_id
     search_query = request.args.get('q', '')
@@ -324,13 +272,12 @@ def history():
 @admin_required
 def add_transaction():
     if request.method == 'POST':
-        from bson.objectid import ObjectId
         transaction = {
             'tanggal': datetime.strptime(request.form['tanggal'], '%Y-%m-%d'),
             'deskripsi': request.form['deskripsi'],
             'jumlah': int(request.form['jumlah'].replace('.', '').replace(',', '')),
             'kategori': request.form['kategori'],
-            'acara_id': ObjectId(session['acara_id']),  # Tambahkan acara_id dari session
+            'acara_id': session['acara_id'],  # string ID
             'created_at': datetime.utcnow()
         }
         # Handle rincian pengeluaran
@@ -361,7 +308,7 @@ def add_transaction():
 @login_required
 @admin_required
 def quick_add_expense():
-    from bson.objectid import ObjectId
+    
     # Validate required fields
     deskripsi = request.form.get('deskripsi', '').strip()
     tanggal_str = request.form.get('tanggal', '').strip()
@@ -414,7 +361,7 @@ def quick_add_expense():
         'jumlah': total,
         'kategori': 'Pengeluaran',
         'rincian': rincian,
-        'acara_id': ObjectId(session['acara_id']),
+        'acara_id': session['acara_id'],
         'created_at': datetime.utcnow()
     }
     res = db.transaksi.insert_one(doc)
@@ -425,8 +372,8 @@ def quick_add_expense():
 @login_required
 @admin_required
 def edit_transaction(id):
-    acara_id = ObjectId(session['acara_id'])
-    transaction = db.transaksi.find_one({'_id': ObjectId(id), 'acara_id': acara_id})
+    acara_id = session['acara_id']
+    transaction = db.transaksi.find_one({'_id': id, 'acara_id': acara_id})
 
     if request.method == 'POST':
         updated_transaction = {
@@ -437,7 +384,7 @@ def edit_transaction(id):
                 'kategori': request.form['kategori']
             }
         }
-        db.transaksi.update_one({'_id': ObjectId(id)}, updated_transaction)
+        db.transaksi.update_one({'_id': id}, updated_transaction)
         return redirect(url_for('main.history'))
 
     return render_template('edit_transaction.html', title='Edit Transaksi', transaction=transaction)
@@ -446,8 +393,8 @@ def edit_transaction(id):
 @login_required
 @admin_required
 def delete_transaction(id):
-    acara_id = ObjectId(session['acara_id'])
-    db.transaksi.delete_one({'_id': ObjectId(id), 'acara_id': acara_id})
+    acara_id = session['acara_id']
+    db.transaksi.delete_one({'_id': id, 'acara_id': acara_id})
     return redirect(url_for('main.history'))
 
 
@@ -455,8 +402,8 @@ def delete_transaction(id):
 @login_required
 @admin_required
 def add_rincian(id):
-    acara_id = ObjectId(session['acara_id'])
-    transaction = db.transaksi.find_one({'_id': ObjectId(id), 'acara_id': acara_id})
+    acara_id = session['acara_id']
+    transaction = db.transaksi.find_one({'_id': id, 'acara_id': acara_id})
     if not transaction or transaction.get('kategori', transaction.get('tipe')) != 'Pengeluaran':
         return redirect(url_for('main.view_transaction', id=id))
     nama = request.form.get('rincian_nama', '').strip()
@@ -468,7 +415,7 @@ def add_rincian(id):
     if nama and jumlah > 0:
         rincian = transaction.get('rincian', [])
         rincian.append({'nama': nama, 'jumlah': jumlah})
-        db.transaksi.update_one({'_id': ObjectId(id)}, {'$set': {'rincian': rincian}})
+        db.transaksi.update_one({'_id': id}, {'$set': {'rincian': rincian}})
         # Validation flash
         total_rincian = sum(item.get('jumlah', 0) for item in rincian)
         selisih = (transaction.get('jumlah', 0)) - total_rincian
@@ -482,8 +429,8 @@ def add_rincian(id):
 @login_required
 @admin_required
 def edit_rincian(id, idx):
-    acara_id = ObjectId(session['acara_id'])
-    transaction = db.transaksi.find_one({'_id': ObjectId(id), 'acara_id': acara_id})
+    acara_id = session['acara_id']
+    transaction = db.transaksi.find_one({'_id': id, 'acara_id': acara_id})
     if not transaction or transaction.get('kategori', transaction.get('tipe')) != 'Pengeluaran':
         return redirect(url_for('main.view_transaction', id=id))
     rincian = transaction.get('rincian', [])
@@ -496,7 +443,7 @@ def edit_rincian(id, idx):
             jumlah = 0
         if nama and jumlah > 0:
             rincian[idx] = {'nama': nama, 'jumlah': jumlah}
-            db.transaksi.update_one({'_id': ObjectId(id)}, {'$set': {'rincian': rincian}})
+            db.transaksi.update_one({'_id': id}, {'$set': {'rincian': rincian}})
             total_rincian = sum(item.get('jumlah', 0) for item in rincian)
             selisih = (transaction.get('jumlah', 0)) - total_rincian
             if selisih == 0:
@@ -509,14 +456,14 @@ def edit_rincian(id, idx):
 @login_required
 @admin_required
 def delete_rincian(id, idx):
-    acara_id = ObjectId(session['acara_id'])
-    transaction = db.transaksi.find_one({'_id': ObjectId(id), 'acara_id': acara_id})
+    acara_id = session['acara_id']
+    transaction = db.transaksi.find_one({'_id': id, 'acara_id': acara_id})
     if not transaction or transaction.get('kategori', transaction.get('tipe')) != 'Pengeluaran':
         return redirect(url_for('main.view_transaction', id=id))
     rincian = transaction.get('rincian', [])
     if 0 <= idx < len(rincian):
         rincian.pop(idx)
-        db.transaksi.update_one({'_id': ObjectId(id)}, {'$set': {'rincian': rincian}})
+        db.transaksi.update_one({'_id': id}, {'$set': {'rincian': rincian}})
         total_rincian = sum(item.get('jumlah', 0) for item in rincian)
         selisih = (transaction.get('jumlah', 0)) - total_rincian
         if selisih == 0:
@@ -529,8 +476,8 @@ def delete_rincian(id, idx):
 @login_required
 @admin_required
 def view_transaction(id):
-    acara_id = ObjectId(session['acara_id'])
-    transaction = db.transaksi.find_one({'_id': ObjectId(id), 'acara_id': acara_id})
+    acara_id = session['acara_id']
+    transaction = db.transaksi.find_one({'_id': id, 'acara_id': acara_id})
 
     # Recalculate adjusted amount for detail view
     original_amount = transaction.get('jumlah', 0)
@@ -575,7 +522,7 @@ def adjust_transaction(id):
         }
 
         db.transaksi.update_one(
-            {'_id': ObjectId(id)},
+            {'_id': id},
             {'$push': {'adjustments': adjustment}}
         )
         flash('Penyesuaian berhasil ditambahkan.', 'success')
@@ -590,8 +537,7 @@ def adjust_transaction(id):
 @login_required
 @admin_required
 def report():
-    from bson.objectid import ObjectId
-    acara_id = ObjectId(session['acara_id'])
+    acara_id = session['acara_id']
     
     start_date_str = request.args.get('start_date')
     end_date_str = request.args.get('end_date')
@@ -788,18 +734,16 @@ def report():
 @login_required
 @admin_required
 def migrate_kategori():
-    # Step 1: copy missing kategori from tipe
-    to_copy = list(db.transaksi.find({'kategori': {'$exists': False}, 'tipe': {'$exists': True}}, {'tipe': 1}))
+    # TinyDB adapter: implement only the copy part. Removal of 'tipe' is skipped.
+    # Find docs where 'kategori' missing but 'tipe' exists (legacy)
+    to_copy = list(db.transaksi.find({'kategori': {'$exists': False}, 'tipe': {'$exists': True}}))
     copied = 0
     for doc in to_copy:
         kat = doc.get('tipe')
         if kat:
             db.transaksi.update_one({'_id': doc['_id']}, {'$set': {'kategori': kat}})
             copied += 1
-    # Step 2: remove legacy field 'tipe'
-    unset_result = db.transaksi.update_many({'tipe': {'$exists': True}}, {'$unset': {'tipe': ""}})
-    removed = unset_result.modified_count if unset_result.acknowledged else 0
-    flash(f"Migrasi selesai. Disalin: {copied} dokumen. Field 'tipe' dihapus dari {removed} dokumen.", 'success')
+    flash(f"Migrasi selesai. Disalin: {copied} dokumen. Field 'tipe' tidak dihapus pada backend TinyDB.", 'success')
     return redirect(url_for('main.dashboard'))
 
 
@@ -811,9 +755,8 @@ def migrate_kategori():
 @admin_required
 def report_export():
     """Export CSV for report tabs: ledger, breakdown, mismatch, recap."""
-    from bson.objectid import ObjectId
     from app.acara_model import AcaraModel
-    acara_id = ObjectId(session['acara_id'])
+    acara_id = session['acara_id']
 
     type_ = request.args.get('type', 'ledger')  # ledger|breakdown|mismatch|rekap
     fmt = request.args.get('format', 'csv')     # currently only csv

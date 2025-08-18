@@ -33,3 +33,5 @@ dist/
 
 # Frontend generated
 static/css/output.css
+# TinyDB data
+data.json

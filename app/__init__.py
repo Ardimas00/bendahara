@@ -1,19 +1,11 @@
 from flask import Flask
 from config import Config
-from pymongo import MongoClient
 import os
+from app.tinydb_adapter import TinyDatabase
 
-# Initialize MongoDB client
-client = MongoClient(Config.MONGO_URI) if Config.MONGO_URI else None
-# Determine database: try default from URI, else use MONGO_DB env or fallback name
-if client:
-    try:
-        db = client.get_default_database()
-    except Exception:
-        db_name = os.environ.get('MONGO_DB', 'bendahara_db')
-        db = client[db_name]
-else:
-    db = None
+# Initialize TinyDB database (stored in local JSON file)
+# Note: for Android Termux, this will be created in the working directory.
+db = TinyDatabase(path=os.environ.get('TINYDB_PATH', 'data.json'))
 
 def create_app(config_class=Config):
     from werkzeug.security import generate_password_hash
@@ -30,7 +22,8 @@ def create_app(config_class=Config):
         db.users.insert_one({
             'username': 'bendahara',
             'password_hash': generate_password_hash('hanyayangberhak'),
-            'role': 'admin'
+            'role': 'admin',
+            'created_at': __import__('datetime').datetime.utcnow()
         })
 
     # This is where you will register your routes (Blueprints)

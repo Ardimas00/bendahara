@@ -15,25 +15,22 @@ class AcaraModel:
 
     @staticmethod
     def get_all():
-        return list(db.acara.find())
+        return list(db.acara.find({}))
 
     @staticmethod
     def get_by_id(acara_id):
-        from bson.objectid import ObjectId
-        return db.acara.find_one({'_id': ObjectId(acara_id)})
+        return db.acara.find_one({'_id': acara_id})
 
     @staticmethod
     def update_acara(acara_id, nama=None, keterangan=None):
-        from bson.objectid import ObjectId
         update_fields = {}
         if nama is not None:
             update_fields['nama'] = nama
         if keterangan is not None:
             update_fields['keterangan'] = keterangan
         if update_fields:
-            db.acara.update_one({'_id': ObjectId(acara_id)}, {'$set': update_fields})
+            db.acara.update_one({'_id': acara_id}, {'$set': update_fields})
 
     @staticmethod
     def delete_acara(acara_id):
-        from bson.objectid import ObjectId
-        db.acara.delete_one({'_id': ObjectId(acara_id)})
+        db.acara.delete_one({'_id': acara_id})
