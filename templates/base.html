@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0ea5e9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>{{ title }} - Aplikasi Bendahara</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,6 +14,27 @@
     {% block head_extra %}{% endblock %}
 </head>
 <body class="bg-slate-50 font-poppins text-slate-800">
+    <!-- Flash Messages (fixed top) -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div id="flash-container" class="fixed top-3 left-1/2 -translate-x-1/2 z-50 space-y-2 px-4 w-full max-w-xl">
+        {% for category, message in messages %}
+        <div class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium
+            {% if category == 'error' %} bg-rose-50 text-rose-700 border border-rose-200
+            {% elif category == 'success' %} bg-emerald-50 text-emerald-700 border border-emerald-200
+            {% else %} bg-sky-50 text-sky-700 border border-sky-200 {% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+      setTimeout(function(){
+        var f = document.getElementById('flash-container');
+        if(f){ f.style.transition='opacity .3s'; f.style.opacity='0'; setTimeout(function(){ f.remove(); }, 350); }
+      }, 2500);
+    </script>
+    {% endif %}
+    {% endwith %}
     <!-- Tab Navigation -->
     <!-- Top Tab Navigation (desktop/tablet only) -->
     <nav class="mb-6 no-print hidden sm:block">
@@ -58,12 +82,18 @@
             {% endif %}
         </ul>
     </nav>
-    <div id="main-content" class="container mx-auto p-4">
+    <div id="main-content" class="container mx-auto p-4" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);">
         {% block content %}{% endblock %}
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     {% block scripts %}{% endblock %}
     {% include '_mobile_tabbar.html' %}
+    {% if session.get('role') == 'admin' %}
+    <!-- Floating Action Button (mobile only) -->
+    <a href="{{ url_for('main.add_transaction') }}" class="sm:hidden fixed right-4 bottom-20 z-50 inline-flex items-center justify-center h-14 w-14 rounded-full shadow-lg text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+    </a>
+    {% endif %}
     <script>
     (function(){
       function applyBottomPadding(){
@@ -72,7 +102,9 @@
         if(!content || !tab) return;
         var h = tab.offsetHeight || 0;
         // add small buffer for safe area
-        content.style.paddingBottom = (h + 16) + 'px';
+        var safe = 0;
+        try { safe = parseInt(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-bottom)')) || 0; } catch(e) {}
+        content.style.paddingBottom = (h + safe + 16) + 'px';
       }
       window.addEventListener('resize', applyBottomPadding);
       document.addEventListener('DOMContentLoaded', applyBottomPadding);

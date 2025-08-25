@@ -12,21 +12,21 @@
             <div class="mb-4">
                 <div>
                     <label for="tanggal" class="block text-sm font-medium text-slate-700">Tanggal</label>
-                    <input type="date" name="tanggal" id="tanggal" required class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                    <input type="date" name="tanggal" id="tanggal" required class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-sky-400 focus:ring focus:ring-sky-200 focus:ring-opacity-50 text-base py-2.5 px-3">
                 </div>
             </div>
 
             <div class="mb-4">
                 <div>
                     <label for="deskripsi" class="block text-sm font-medium text-slate-700">Deskripsi</label>
-                    <input type="text" name="deskripsi" id="deskripsi" required placeholder="Contoh: Pembelian spanduk acara" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                    <input type="text" name="deskripsi" id="deskripsi" required placeholder="Contoh: Pembelian spanduk acara" class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-sky-400 focus:ring focus:ring-sky-200 focus:ring-opacity-50 text-base py-2.5 px-3" autofocus>
                 </div>
             </div>
 
             <div class="mb-4">
                 <div>
                     <label for="jumlah" class="block text-sm font-medium text-slate-700">Jumlah (Rp)</label>
-                    <input type="text" name="jumlah" id="jumlah" required placeholder="Contoh: 500000" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                    <input type="text" inputmode="numeric" autocomplete="off" name="jumlah" id="jumlah" required placeholder="Contoh: 500000" class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-sky-400 focus:ring focus:ring-sky-200 focus:ring-opacity-50 text-base py-2.5 px-3">
                 </div>
             </div>
 
@@ -34,7 +34,7 @@
             <div class="mb-6">
                 <div>
                     <label for="kategori" class="block text-sm font-medium text-slate-700">Kategori</label>
-                    <select name="kategori" id="kategori" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+                    <select name="kategori" id="kategori" class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-sky-400 focus:ring focus:ring-sky-200 focus:ring-opacity-50 text-base py-2.5 px-3">
                         <option value="Pemasukan">Pemasukan</option>
                         <option value="Pengeluaran">Pengeluaran</option>
                     </select>
@@ -45,17 +45,14 @@
             <div id="rincian-section" class="mb-8 hidden">
                 <label class="block text-sm font-bold text-slate-700 mb-2">Rincian Pengeluaran</label>
                 <div id="rincian-list"></div>
-                <button type="button" id="add-rincian-btn" class="mt-3 inline-flex items-center px-3 py-1 border border-sky-600 text-xs font-medium rounded shadow-sm text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                <button type="button" id="add-rincian-btn" class="mt-3 inline-flex items-center px-3 py-2 border border-sky-600 text-sm font-medium rounded-lg shadow-sm text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
                     + Tambah Rincian
                 </button>
             </div>
 
             <div class="mt-8 pt-5 border-t border-slate-200">
                 <div class="flex justify-end">
-                    <a href="{{ url_for('main.dashboard') }}" class="inline-flex justify-center py-2 px-4 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
-                        Batal
-                    </a>
-                    <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-sky-600 rounded-md shadow-sm text-sm font-medium text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                    <button type="submit" id="submit-btn" class="w-full sm:w-auto inline-flex justify-center py-3 px-5 rounded-lg shadow-sm text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
                         Simpan Transaksi
                     </button>
                 </div>
@@ -66,11 +63,18 @@
                     const row = document.createElement('div');
                     row.className = 'flex gap-2 mb-2 rincian-row';
                     row.innerHTML = `
-                        <input type="text" name="rincian_nama" placeholder="Nama Rincian" value="${nama}" class="flex-1 rounded-md border-slate-300 focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50" required>
-                        <input type="text" name="rincian_jumlah" placeholder="Jumlah (Rp)" value="${jumlah}" class="w-32 rounded-md border-slate-300 focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50" required>
+                        <input type="text" name="rincian_nama" placeholder="Nama Rincian" value="${nama}" class="flex-1 rounded-lg border-slate-300 focus:border-sky-400 focus:ring focus:ring-sky-200 focus:ring-opacity-50 text-base py-2 px-3" required>
+                        <input type="text" inputmode="numeric" name="rincian_jumlah" placeholder="Jumlah (Rp)" value="${jumlah}" class="w-36 rounded-lg border-slate-300 focus:border-sky-400 focus:ring focus:ring-sky-200 focus:ring-opacity-50 text-base py-2 px-3" required>
                         <button type="button" class="remove-rincian-btn text-rose-600 hover:text-rose-800 px-2">&times;</button>
                     `;
                     row.querySelector('.remove-rincian-btn').onclick = () => row.remove();
+                    // Format angka ribuan saat ketik (ringan untuk mobile)
+                    const amt = row.querySelector('input[name="rincian_jumlah"]');
+                    amt.addEventListener('input', () => {
+                        const digits = (amt.value || '').replace(/[^0-9]/g, '');
+                        if(!digits){ amt.value = ''; return; }
+                        try { amt.value = Number(digits).toLocaleString('id-ID'); } catch(e) { amt.value = digits; }
+                    });
                     return row;
                 }
                 // Tampilkan/Hide rincian-section sesuai kategori
@@ -95,9 +99,57 @@
                 document.querySelector('form').addEventListener('submit', function(e) {
                     document.querySelectorAll('input[name="rincian_nama"]').forEach(inp => inp.name = 'rincian_nama');
                     document.querySelectorAll('input[name="rincian_jumlah"]').forEach(inp => inp.name = 'rincian_jumlah');
+                    // Sanitasi: hapus pemisah ribuan sebelum submit
+                    const mainAmt = document.getElementById('jumlah');
+                    if(mainAmt){ mainAmt.value = (mainAmt.value||'').replace(/\./g,'').replace(/,/g,'').replace(/\s/g,''); }
+                    document.querySelectorAll('input[name="rincian_jumlah"]').forEach(inp => {
+                        inp.value = (inp.value||'').replace(/\./g,'').replace(/,/g,'').replace(/\s/g,'');
+                    });
                 });
+                // Format ribuan untuk input jumlah utama saat ketik
+                (function(){
+                    const mainAmt = document.getElementById('jumlah');
+                    if(!mainAmt) return;
+                    mainAmt.addEventListener('input', () => {
+                        const digits = (mainAmt.value || '').replace(/[^0-9]/g, '');
+                        if(!digits){ mainAmt.value = ''; return; }
+                        try { mainAmt.value = Number(digits).toLocaleString('id-ID'); } catch(e) { mainAmt.value = digits; }
+                    });
+                })();
                 // Inisialisasi jika kategori default adalah Pengeluaran
                 window.addEventListener('DOMContentLoaded', toggleRincianSection);
+
+                // Anti double-submit & enter-to-next
+                (function(){
+                  const form = document.querySelector('form[action*="add_transaction"]');
+                  if(!form) return;
+                  const submitBtn = document.getElementById('submit-btn');
+                  form.addEventListener('submit', function(){
+                    if(submitBtn){
+                      submitBtn.disabled = true;
+                      const orig = submitBtn.textContent;
+                      submitBtn.dataset.orig = orig;
+                      submitBtn.textContent = 'Menyimpan…';
+                    }
+                  });
+                  // Enter pindah ke field berikutnya (tanggal -> deskripsi -> jumlah -> kategori)
+                  const order = [
+                    document.getElementById('tanggal'),
+                    document.getElementById('deskripsi'),
+                    document.getElementById('jumlah'),
+                    document.getElementById('kategori')
+                  ].filter(Boolean);
+                  order.forEach((el, idx) => {
+                    el.addEventListener('keydown', (e) => {
+                      if(e.key === 'Enter'){
+                        if(idx < order.length - 1){
+                          e.preventDefault();
+                          order[idx+1].focus();
+                        }
+                      }
+                    });
+                  });
+                })();
             </script>
         </form>
     </div>
@@ -126,7 +178,7 @@
       <div>
         <label class="block text-sm font-bold text-slate-700 mb-2">Rincian</label>
         <div id="q_rincian_list" class="space-y-2 overflow-x-auto"></div>
-        <button type="button" id="q_add_row" class="mt-3 inline-flex items-center px-3 py-1 border border-sky-600 text-xs font-medium rounded shadow-sm text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">+ Tambah Baris</button>
+        <button type="button" id="q_add_row" class="mt-3 inline-flex items-center px-3 py-2 border border-sky-600 text-xs font-medium rounded shadow-sm text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">+ Tambah Baris</button>
       </div>
 
       <div class="mt-4 flex justify-end items-center gap-4">
@@ -135,7 +187,7 @@
       </div>
 
       <div class="mt-6 flex justify-end">
-        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-sky-600 rounded-md shadow-sm text-sm font-medium text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">Simpan Pengeluaran</button>
+        <button type="submit" class="inline-flex justify-center py-3 px-5 border border-sky-600 rounded-md shadow-sm text-sm font-medium text-sky-700 bg-white hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">Simpan Pengeluaran</button>
       </div>
 
       <input type="hidden" name="kategori" value="Pengeluaran">

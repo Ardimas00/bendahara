@@ -3,6 +3,7 @@ from app import db
 from datetime import datetime, timedelta
 import io
 import csv
+import re
 
 main_bp = Blueprint('main', __name__)
 
@@ -275,7 +276,7 @@ def add_transaction():
         transaction = {
             'tanggal': datetime.strptime(request.form['tanggal'], '%Y-%m-%d'),
             'deskripsi': request.form['deskripsi'],
-            'jumlah': int(request.form['jumlah'].replace('.', '').replace(',', '')),
+            'jumlah': int(request.form['jumlah'].replace('.', '').replace(',', '').replace(' ', '')),
             'kategori': request.form['kategori'],
             'acara_id': session['acara_id'],  # string ID
             'created_at': datetime.utcnow()
@@ -288,12 +289,38 @@ def add_transaction():
             for nama, jumlah in zip(rincian_nama, rincian_jumlah):
                 if nama.strip() and jumlah.strip():
                     try:
-                        jumlah_int = int(jumlah.replace('.', '').replace(',', ''))
+                        jumlah_int = int(jumlah.replace('.', '').replace(',', '').replace(' ', ''))
                         rincian.append({'nama': nama.strip(), 'jumlah': jumlah_int})
                     except ValueError:
                         continue
             if rincian:
                 transaction['rincian'] = rincian
+        # Auto-merge: if Pengeluaran with same deskripsi (case-insensitive) already exists in this acara, merge instead of insert new (regardless of date)
+        if transaction['kategori'] == 'Pengeluaran':
+            acara_id = transaction['acara_id']
+            desc = (transaction['deskripsi'] or '').strip().lower()
+            # Scan all pengeluaran in acara, pick the most recent (tanggal terbesar) with same deskripsi
+            existing = None
+            latest_date = None
+            for doc in db.transaksi.find({'acara_id': acara_id, 'kategori': 'Pengeluaran'}):
+                if str(doc.get('deskripsi','')).strip().lower() == desc:
+                    dt = doc.get('tanggal')
+                    if latest_date is None or (dt and dt > latest_date):
+                        latest_date = dt
+                        existing = doc
+            if existing:
+                new_fields = {
+                    'jumlah': (existing.get('jumlah', 0) + transaction.get('jumlah', 0))
+                }
+                # Merge rincian if provided
+                incoming_r = transaction.get('rincian', [])
+                if incoming_r:
+                    merged_r = (existing.get('rincian', []) or []) + incoming_r
+                    new_fields['rincian'] = merged_r
+                db.transaksi.update_one({'_id': existing['_id']}, {'$set': new_fields})
+                flash('Transaksi digabung dengan pengeluaran yang sudah ada (deskripsi sama).', 'success')
+                return redirect(url_for('main.dashboard'))
+        # default: insert new
         db.transaksi.insert_one(transaction)
         return redirect(url_for('main.dashboard'))
     # GET: selalu render template dengan variabel yang benar
@@ -364,6 +391,26 @@ def quick_add_expense():
         'acara_id': session['acara_id'],
         'created_at': datetime.utcnow()
     }
+    # Auto-merge for Pengeluaran with same deskripsi (i) within same acara (regardless of date)
+    acara_id = doc['acara_id']
+    target_desc = (deskripsi or '').strip().lower()
+    existing = None
+    latest_date = None
+    for doc2 in db.transaksi.find({'acara_id': acara_id, 'kategori': 'Pengeluaran'}):
+        if str(doc2.get('deskripsi','')).strip().lower() == target_desc:
+            dt = doc2.get('tanggal')
+            if latest_date is None or (dt and dt > latest_date):
+                latest_date = dt
+                existing = doc2
+    if existing:
+        new_fields = {
+            'jumlah': (existing.get('jumlah', 0) + doc.get('jumlah', 0)),
+            'rincian': (existing.get('rincian', []) or []) + (doc.get('rincian', []) or [])
+        }
+        db.transaksi.update_one({'_id': existing['_id']}, {'$set': new_fields})
+        flash('Pengeluaran berhasil digabung ke transaksi yang sudah ada (deskripsi sama).', 'success')
+        return redirect(url_for('main.view_transaction', id=str(existing['_id'])))
+    # default insert
     res = db.transaksi.insert_one(doc)
     flash('Pengeluaran berhasil dibuat dari rincian.', 'success')
     return redirect(url_for('main.view_transaction', id=str(res.inserted_id)))
@@ -380,7 +427,7 @@ def edit_transaction(id):
             '$set': {
                 'tanggal': datetime.strptime(request.form['tanggal'], '%Y-%m-%d'),
                 'deskripsi': request.form['deskripsi'],
-                'jumlah': int(request.form['jumlah'].replace('.', '').replace(',', '')),
+                'jumlah': int(request.form['jumlah'].replace('.', '').replace(',', '').replace(' ', '')),
                 'kategori': request.form['kategori']
             }
         }
@@ -407,7 +454,7 @@ def add_rincian(id):
     if not transaction or transaction.get('kategori', transaction.get('tipe')) != 'Pengeluaran':
         return redirect(url_for('main.view_transaction', id=id))
     nama = request.form.get('rincian_nama', '').strip()
-    jumlah = request.form.get('rincian_jumlah', '').replace('.', '').replace(',', '')
+    jumlah = request.form.get('rincian_jumlah', '').replace('.', '').replace(',', '').replace(' ', '')
     try:
         jumlah = int(jumlah)
     except Exception:
@@ -436,7 +483,7 @@ def edit_rincian(id, idx):
     rincian = transaction.get('rincian', [])
     if 0 <= idx < len(rincian):
         nama = request.form.get('edit_nama', '').strip()
-        jumlah = request.form.get('edit_jumlah', '').replace('.', '').replace(',', '')
+        jumlah = request.form.get('edit_jumlah', '').replace('.', '').replace(',', '').replace(' ', '')
         try:
             jumlah = int(jumlah)
         except Exception:
@@ -508,7 +555,7 @@ def view_transaction(id):
 def adjust_transaction(id):
     try:
         # Amount can be positive (penambahan) or negative (pengurangan)
-        amount = int(request.form['adjustment_amount'].replace('.', '').replace(',', ''))
+        amount = int(request.form['adjustment_amount'].replace('.', '').replace(',', '').replace(' ', ''))
         reason = request.form['reason']
 
         if not reason:
