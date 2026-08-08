@@ -1,6 +1,6 @@
 # Aplikasi Manajemen Keuangan Bendahara
 
-Sebuah aplikasi web sederhana yang dibangun dengan Python, Flask, dan MongoDB untuk membantu bendahara mengelola dan melacak keuangan acara.
+Sebuah aplikasi web sederhana yang dibangun dengan Python, Flask, dan TinyDB untuk membantu bendahara mengelola dan melacak keuangan acara.
 
 ## Fitur Utama
 
@@ -12,9 +12,10 @@ Sebuah aplikasi web sederhana yang dibangun dengan Python, Flask, dan MongoDB un
 ## Teknologi yang Digunakan
 
 - **Backend:** Python 3, Flask
-- **Database:** MongoDB (diakses menggunakan `pymongo`)
+- **Database:** TinyDB (disimpan di file JSON lokal)
 - **Frontend:** HTML, Tailwind CSS
 - **Environment:** `python-dotenv` untuk manajemen variabel lingkungan.
+- **Keamanan:** CSRF protection (Flask-WTF), kode viewer opsional.
 
 ---
 
@@ -24,7 +25,6 @@ Sebuah aplikasi web sederhana yang dibangun dengan Python, Flask, dan MongoDB un
 
 - Python 3.8 atau lebih baru.
 - Node.js dan npm (untuk build Tailwind CSS).
-- Server MongoDB yang sedang berjalan (lokal atau di cloud).
 
 ### Langkah-langkah Instalasi
 
@@ -56,14 +56,15 @@ Sebuah aplikasi web sederhana yang dibangun dengan Python, Flask, dan MongoDB un
     ```
 
 5.  **Konfigurasi Variabel Lingkungan**
-    - Buat sebuah file baru bernama `.env` di direktori utama proyek.
-    - Salin konten dari `.env.example` (jika ada) atau tambahkan baris berikut:
+    - Salin file `.env.example` menjadi `.env`:
+      ```bash
+      cp .env.example .env
       ```
-      MONGO_URI="mongodb://localhost:27017/bendahara_db"
-      SECRET_KEY="kunci-rahasia-anda-yang-sangat-aman"
-      ```
-    - Ganti `SECRET_KEY` dengan string acak yang panjang dan aman.
-    - Sesuaikan `MONGO_URI` jika server MongoDB Anda berada di lokasi yang berbeda.
+    - Edit `.env` dan ganti `SECRET_KEY` dengan string acak yang panjang dan aman.
+    - `TINYDB_PATH` menentukan lokasi file database (default: `data.json`).
+    - `ADMIN_USERNAME` / `ADMIN_PASSWORD` digunakan saat membuat akun admin pertama kali.
+    - `VIEWER_PASSWORD` (opsional): jika diisi, viewer wajib memasukkan kode.
+    - `FLASK_DEBUG=false` untuk production; `ENABLE_ADMIN_TOOLS=true` hanya jika perlu tool migrasi.
 
 ---
 
@@ -81,9 +82,8 @@ Aplikasi ini memerlukan dua proses terminal yang berjalan secara bersamaan: satu
     - Pastikan virtual environment Anda sudah aktif.
     - Jalankan aplikasi dengan perintah:
     ```bash
-    flask run
+    python run.py
     ```
 
 3.  **Buka Aplikasi**
     - Buka browser Anda dan kunjungi alamat `http://127.0.0.1:5000`.
-

@@ -9,6 +9,7 @@
         </div>
 
         <form action="{{ url_for('main.add_transaction') }}" method="post">
+            {% include '_csrf.html' %}
             <div class="mb-4">
                 <div>
                     <label for="tanggal" class="block text-sm font-medium text-slate-700">Tanggal</label>
@@ -164,6 +165,7 @@
       <span class="text-xs text-slate-500">Kategori otomatis: Pengeluaran</span>
     </div>
     <form action="{{ url_for('main.quick_add_expense') }}" method="post" id="quick-add-form">
+        {% include '_csrf.html' %}
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
           <label for="q_tanggal" class="block text-sm font-medium text-slate-700">Tanggal</label>

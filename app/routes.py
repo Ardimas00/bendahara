@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, send_file
 from app import db
+from config import Config
 from datetime import datetime, timedelta
 import io
 import csv
@@ -26,6 +27,16 @@ def admin_required(f):
         if session.get('role') != 'admin':
             flash('Akses hanya untuk admin.', 'error')
             return redirect(url_for('main.login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Decorator: acara must be selected
+def acara_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'acara_id' not in session:
+            flash('Silakan pilih acara terlebih dahulu.', 'error')
+            return redirect(url_for('main.select_acara'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -79,6 +90,7 @@ def select_acara():
 # Buat acara baru
 @main_bp.route('/create-acara', methods=['POST'])
 @login_required
+@admin_required
 def create_acara():
     from app.acara_model import AcaraModel
     nama = request.form.get('nama')
@@ -91,19 +103,24 @@ def create_acara():
 # Hapus acara
 @main_bp.route('/delete-acara', methods=['POST'])
 @login_required
+@admin_required
 def delete_acara():
     from app.acara_model import AcaraModel
     acara_id = request.form.get('acara_id')
     if acara_id:
-        # Cek apakah acara yang akan dihapus sedang aktif
         if session.get('acara_id') == acara_id:
-            session.pop('acara_id', None)  # Hapus dari session jika sedang aktif
-        AcaraModel.delete_acara(acara_id)
-        flash('Acara berhasil dihapus.', 'success')
+            session.pop('acara_id', None)
+        deleted_tx = AcaraModel.delete_acara(acara_id)
+        flash(f'Acara berhasil dihapus beserta {deleted_tx} transaksi terkait.', 'success')
     return redirect(url_for('main.select_acara'))
 
 @main_bp.route('/viewer-entry', methods=['POST'])
 def viewer_entry():
+    if Config.VIEWER_PASSWORD:
+        viewer_password = request.form.get('viewer_password', '')
+        if viewer_password != Config.VIEWER_PASSWORD:
+            flash('Kode viewer salah.', 'error')
+            return redirect(url_for('main.login'))
     session['role'] = 'viewer'
     session['username'] = 'viewer'
     # Selalu hapus acara_id dan paksa pilih acara setiap masuk sebagai viewer
@@ -117,6 +134,7 @@ def logout():
 
 @main_bp.route('/dashboard')
 @login_required
+@acara_required
 @admin_required
 def dashboard():
     acara_id = session['acara_id']
@@ -164,6 +182,7 @@ def dashboard():
 
 @main_bp.route('/viewer-report')
 @login_required
+@acara_required
 def viewer_report():
     if session.get('role') != 'viewer':
         return redirect(url_for('main.root_redirect'))
@@ -175,6 +194,7 @@ def viewer_report():
 
 @main_bp.route('/api/viewer-report')
 @login_required
+@acara_required
 def api_viewer_report():
     from datetime import datetime, timedelta
     acara_id = session['acara_id']
@@ -237,6 +257,7 @@ def api_viewer_report():
 
 @main_bp.route('/history')
 @login_required
+@acara_required
 @admin_required
 def history():
     acara_id = session['acara_id']
@@ -270,6 +291,7 @@ def history():
 
 @main_bp.route('/add', methods=['GET', 'POST'])
 @login_required
+@acara_required
 @admin_required
 def add_transaction():
     if request.method == 'POST':
@@ -333,6 +355,7 @@ def add_transaction():
 
 @main_bp.route('/expenses/quick-add', methods=['POST'])
 @login_required
+@acara_required
 @admin_required
 def quick_add_expense():
     
@@ -417,6 +440,7 @@ def quick_add_expense():
 
 @main_bp.route('/edit/<id>', methods=['GET', 'POST'])
 @login_required
+@acara_required
 @admin_required
 def edit_transaction(id):
     acara_id = session['acara_id']
@@ -438,6 +462,7 @@ def edit_transaction(id):
 
 @main_bp.route('/delete/<id>', methods=['POST'])
 @login_required
+@acara_required
 @admin_required
 def delete_transaction(id):
     acara_id = session['acara_id']
@@ -447,6 +472,7 @@ def delete_transaction(id):
 
 @main_bp.route('/transaction/<id>/add_rincian', methods=['POST'])
 @login_required
+@acara_required
 @admin_required
 def add_rincian(id):
     acara_id = session['acara_id']
@@ -474,6 +500,7 @@ def add_rincian(id):
 
 @main_bp.route('/transaction/<id>/edit_rincian/<int:idx>', methods=['POST'])
 @login_required
+@acara_required
 @admin_required
 def edit_rincian(id, idx):
     acara_id = session['acara_id']
@@ -501,6 +528,7 @@ def edit_rincian(id, idx):
 
 @main_bp.route('/transaction/<id>/delete_rincian/<int:idx>', methods=['POST'])
 @login_required
+@acara_required
 @admin_required
 def delete_rincian(id, idx):
     acara_id = session['acara_id']
@@ -521,6 +549,7 @@ def delete_rincian(id, idx):
 
 @main_bp.route('/transaction/<id>')
 @login_required
+@acara_required
 @admin_required
 def view_transaction(id):
     acara_id = session['acara_id']
@@ -551,6 +580,7 @@ def view_transaction(id):
 
 @main_bp.route('/adjust_transaction/<id>', methods=['POST'])
 @login_required
+@acara_required
 @admin_required
 def adjust_transaction(id):
     try:
@@ -582,6 +612,7 @@ def adjust_transaction(id):
 
 @main_bp.route('/report', methods=['GET'])
 @login_required
+@acara_required
 @admin_required
 def report():
     acara_id = session['acara_id']
@@ -779,8 +810,12 @@ def report():
 # Admin utility: migrate legacy 'tipe' -> 'kategori'
 @main_bp.route('/admin/migrate-kategori', methods=['POST'])
 @login_required
+@acara_required
 @admin_required
 def migrate_kategori():
+    if not Config.ENABLE_ADMIN_TOOLS:
+        flash('Fitur admin tidak tersedia.', 'error')
+        return redirect(url_for('main.dashboard'))
     # TinyDB adapter: implement only the copy part. Removal of 'tipe' is skipped.
     # Find docs where 'kategori' missing but 'tipe' exists (legacy)
     to_copy = list(db.transaksi.find({'kategori': {'$exists': False}, 'tipe': {'$exists': True}}))
@@ -799,6 +834,7 @@ def migrate_kategori():
 # ==============================
 @main_bp.route('/report/export', methods=['GET'])
 @login_required
+@acara_required
 @admin_required
 def report_export():
     """Export CSV for report tabs: ledger, breakdown, mismatch, recap."""

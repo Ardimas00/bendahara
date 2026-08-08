@@ -168,6 +168,14 @@ class Collection:
                 self.table.remove(Query()._id == raw['_id'])
                 break
 
+    def delete_many(self, filter_dict: Dict[str, Any]) -> int:
+        removed = 0
+        for raw in list(self.table.all()):
+            if _match_simple(filter_dict, raw):
+                self.table.remove(Query()._id == raw['_id'])
+                removed += 1
+        return removed
+
     def count_documents(self, filter_dict: Dict[str, Any]) -> int:
         cnt = 0
         for raw in self.table.all():

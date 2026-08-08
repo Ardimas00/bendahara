@@ -9,6 +9,7 @@
         </div>
 
         <form action="{{ url_for('main.edit_transaction', id=transaction._id) }}" method="post">
+            {% include '_csrf.html' %}
             <div class="grid grid-cols-1 gap-6">
                 <div>
                     <label for="tanggal" class="block text-sm font-medium text-slate-700">Tanggal</label>

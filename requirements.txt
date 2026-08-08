@@ -1,4 +1,5 @@
 Flask
+Flask-WTF
 tinydb
 python-dotenv
 gunicorn

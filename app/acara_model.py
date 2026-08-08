@@ -33,4 +33,6 @@ class AcaraModel:
 
     @staticmethod
     def delete_acara(acara_id):
+        deleted_tx = db.transaksi.delete_many({'acara_id': acara_id})
         db.acara.delete_one({'_id': acara_id})
+        return deleted_tx

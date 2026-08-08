@@ -4,11 +4,14 @@
     <!-- Header -->
     <div class="mb-8">
         <h1 class="text-3xl sm:text-4xl font-bold text-slate-800">Dashboard Keuangan</h1>
+        {% if enable_admin_tools %}
         <div class="mt-3">
-            <form action="{{ url_for('main.migrate_kategori') }}" method="post" onsubmit="return confirm('Jalankan migrasi data? Ini akan menyalin field tipe ke kategori (jika belum ada) dan menghapus field tipe.');">
+            <form action="{{ url_for('main.migrate_kategori') }}" method="post" onsubmit="return confirm('Jalankan migrasi data? Ini akan menyalin field tipe ke kategori (jika belum ada).');">
+                {% include '_csrf.html' %}
                 <button type="submit" class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-800 text-white hover:bg-slate-700">Jalankan Migrasi Kategori</button>
             </form>
         </div>
+        {% endif %}
     </div>
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
@@ -75,7 +78,6 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const ctx = document.getElementById('trendChart').getContext('2d');
     const trendChart = new Chart(ctx, {
